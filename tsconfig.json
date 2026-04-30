@@ -9,12 +9,11 @@
         "src/*"
       ]
     },
-    "module": "ESNext",
-    "moduleResolution": "bundler",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "target": "ES2023",
     "strict": true,
     "esModuleInterop": true,
-    "resolvePackageJsonExports": true,
     "isolatedModules": true,
     "declaration": true,
     "removeComments": true,

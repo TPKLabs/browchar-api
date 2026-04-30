@@ -1,4 +1,4 @@
-import prisma from '@db';
+/* import prisma from '@db';
 import { systems } from './seeds/systems.seed';
 import { gamesBySystem } from './seeds/games.seed';
 
@@ -41,4 +41,4 @@ async function main() {
   console.log('✅ Seeding modular completado con éxito.');
 }
 
-main().catch((e) => { console.error(e); process.exit(1); }).finally(async () => { await prisma.$disconnect(); });
+main().catch((e) => { console.error(e); process.exit(1); }).finally(async () => { await prisma.$disconnect(); }); */
