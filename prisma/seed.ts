@@ -145,7 +145,7 @@ async function main() {
   await seedSystems();
   await seedGames();
 
-  await seedPlaybooksForGame('AW', 'aw');
+  await seedPlaybooksForGame('AW', 'apocalypse-world');
 
   console.log('✅ Seeding completado con éxito.');
 }

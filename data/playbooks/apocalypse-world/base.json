@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "name": "Apocalypse World Base",
+  "description": "Base playbook template for Apocalypse World characters. It contains the common character sheet structure shared by the game's playbooks.",
+  "template": [
+    {
+      "id": "identity",
+      "title": "Identity",
+      "description": "Core character details shared by every Apocalypse World playbook.",
+      "fields": [
+        {
+          "id": "character_name",
+          "label": "Name",
+          "type": "TEXT",
+          "required": true
+        },
+        {
+          "id": "playbook_name",
+          "label": "Playbook",
+          "type": "TEXT",
+          "required": true
+        },
+        {
+          "id": "look",
+          "label": "Look",
+          "type": "TEXTAREA",
+          "defaultValue": ""
+        },
+        {
+          "id": "pronouns",
+          "label": "Pronouns",
+          "type": "TEXT",
+          "defaultValue": ""
+        }
+      ]
+    },
+    {
+      "id": "experience",
+      "title": "Experience",
+      "description": "Track your experience points.",
+      "fields": [
+        {
+          "id": "experience",
+          "label": "Experience",
+          "type": "PROGRESS",
+          "defaultValue": 0,
+          "maxValue": 5
+        }
+      ]
+    },
+    {
+      "id": "stats",
+      "title": "Stats",
+      "description": "The five core Apocalypse World stats.",
+      "fields": [
+        {
+          "id": "cool",
+          "label": "Cool",
+          "type": "TEXTNUMBER",
+          "defaultValue": 0
+        },
+        {
+          "id": "hard",
+          "label": "Hard",
+          "type": "TEXTNUMBER",
+          "defaultValue": 0
+        },
+        {
+          "id": "hot",
+          "label": "Hot",
+          "type": "TEXTNUMBER",
+          "defaultValue": 0
+        },
+        {
+          "id": "sharp",
+          "label": "Sharp",
+          "type": "TEXTNUMBER",
+          "defaultValue": 0
+        },
+        {
+          "id": "weird",
+          "label": "Weird",
+          "type": "TEXTNUMBER",
+          "defaultValue": 0
+        }
+      ]
+    },
+    {
+      "id": "moves",
+      "title": "Moves",
+      "description": "Basic moves, playbook moves, and custom moves.",
+      "fields": [
+        {
+          "id": "cool_move",
+          "label": "Cool",
+          "type": "TEXTAREA",
+          "defaultValue": "Do something under fire",
+          "isReadOnly": true
+        },
+        {
+          "id": "hard_move",
+          "label": "Hard",
+          "type": "TEXTAREA",
+          "defaultValue": "Seize by force, go aggro",
+          "isReadOnly": true
+        },
+        {
+          "id": "hot_move",
+          "label": "Hot",
+          "type": "TEXTAREA",
+          "defaultValue": "Seduce or manipulate",
+          "isReadOnly": true
+        },
+        {
+          "id": "sharp_move",
+          "label": "Sharp",
+          "type": "TEXTAREA",
+          "defaultValue": "Read a sitch, read a person",
+          "isReadOnly": true
+        },
+        {
+          "id": "weird_move",
+          "label": "Weird",
+          "type": "TEXTAREA",
+          "defaultValue": "Open your brain",
+          "isReadOnly": true
+        }
+      ]
+    },
+    {
+      "id": "harm",
+      "title": "Harm",
+      "description": "Track your harm and conditions.",
+      "fields": [
+        {
+          "id": "harm",
+          "label": "Harm",
+          "type": "COUNTER",
+          "defaultValue": 0
+        },
+        {
+          "id": "conditions",
+          "label": "Conditions",
+          "type": "RADIO",
+          "defaultValue": "",
+          "options": [
+            {
+              "label": "Shattered",
+              "value": "shattered",
+              "description": "-1 cool"
+            },
+            {
+              "label": "Crippled",
+              "value": "crippled",
+              "description": "-1 hard"
+            },
+            {
+              "label": "Desfigured",
+              "value": "desfigured",
+              "description": "-1 hot"
+            },
+            {
+              "label": "Broken",
+              "value": "broken",
+              "description": "-1 sharp"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "resources",
+      "title": "Resources",
+      "description": "Gear, barter, weapons, armor, and resources.",
+      "fields": [
+        {
+          "id": "gear",
+          "label": "Gear",
+          "type": "TEXTAREA",
+          "defaultValue": ""
+        },
+        {
+          "id": "weapons",
+          "label": "Weapons",
+          "type": "TEXTAREA",
+          "defaultValue": ""
+        }
+      ]
+    },
+    {
+      "id": "relationships",
+      "title": "Relationships",
+      "description": "Hx and notes about other characters.",
+      "fields": [
+        {
+          "id": "hx",
+          "label": "Hx",
+          "type": "TEXTAREA"
+        },
+        {
+          "id": "notes",
+          "label": "Notes",
+          "type": "TEXTAREA"
+        }
+      ]
+    }
+  ]
+}

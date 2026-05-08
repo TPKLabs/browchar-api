@@ -16,6 +16,7 @@ export interface FieldDefinition {
   required?: boolean;
   type: FieldType;
   defaultValue?: any;
+  maxValue?: any; // Solo para COUNTER y PROGRESS
   disabled?: boolean;
   isReadOnly?: boolean; // Campos de texto plano, como las Additional Rules
   options?: any[]; // Solo para SELECT, CHECKBOX, RADIO
