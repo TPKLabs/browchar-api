@@ -4,5 +4,5 @@ export interface TemplateSection {
   id: string;
   title?: string;
   description?: string;
-  fields: FieldDefinition[]; // IDs de los campos que pertenecen a esta sección
+  fields?: FieldDefinition[]; // IDs de los campos que pertenecen a esta sección
 }

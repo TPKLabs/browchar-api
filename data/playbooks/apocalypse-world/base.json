@@ -1,6 +1,8 @@
 {
-  "version": 1,
+  "id": "apocalypse-world-base",
+  "gameId": "apocalypse-world",
   "name": "Apocalypse World Base",
+  "version": 1,
   "description": "Base playbook template for Apocalypse World characters. It contains the common character sheet structure shared by the game's playbooks.",
   "template": [
     {
@@ -128,6 +130,14 @@
       ]
     },
     {
+      "id": "class_moves",
+      "title": "Class Moves"
+    },
+     {
+      "id": "other_moves",
+      "title": "Other Moves"
+    },
+    {
       "id": "harm",
       "title": "Harm",
       "description": "Track your harm and conditions.",
@@ -189,8 +199,7 @@
     },
     {
       "id": "relationships",
-      "title": "Relationships",
-      "description": "Hx and notes about other characters.",
+      "title": "Relationships and notes",
       "fields": [
         {
           "id": "hx",
