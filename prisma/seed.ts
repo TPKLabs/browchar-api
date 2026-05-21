@@ -28,7 +28,22 @@ type BasePlaybook = {
   template: SeedTemplateSection[];
 };
 
+type PlaybookSeedConfig = {
+  folderName: string;
+  specificSections: Record<string, SeedTemplateSection[]>;
+};
+
 const DATA_DIR = path.join(process.cwd(), 'data');
+
+const PLAYBOOK_SEEDS_BY_GAME_KEY: Record<string, PlaybookSeedConfig> = {
+  AW: {
+    folderName: 'apocalypse-world',
+    specificSections: apocalypseWorldPlaybookSpecificSections as Record<
+      string,
+      SeedTemplateSection[]
+    >,
+  },
+};
 
 async function readJsonFile<T>(filePath: string): Promise<T> {
   const file = await fs.readFile(filePath, 'utf-8');
@@ -56,6 +71,7 @@ function buildPlaybookTemplate(
 async function seedSystems() {
   const systemsPath = path.join(DATA_DIR, 'systems.json');
   const systems = await readJsonFile<SeedSystem[]>(systemsPath);
+  validateSystemsSeed(systems, systemsPath);
 
   for (const system of systems) {
     await prisma.system.upsert({
@@ -72,13 +88,13 @@ async function seedSystems() {
     });
   }
 
-  return systems;
+  return systems.length;
 }
 
 async function seedGames() {
   const gamesPath = path.join(DATA_DIR, 'games', 'games.json');
   const games = await readJsonFile<SeedGame[]>(gamesPath);
-
+  validateGamesSeed(games, gamesPath);
   for (const game of games) {
     const system = await prisma.system.findUnique({
       where: {
@@ -108,10 +124,13 @@ async function seedGames() {
     });
   }
 
-  return games;
+  return games.length;
 }
 
-async function seedPlaybooksForGame(gameKey: string, folderName: string) {
+async function seedPlaybooksForGame(
+  gameKey: string,
+  { folderName, specificSections }: PlaybookSeedConfig,
+) {
   const game = await prisma.game.findUnique({
     where: {
       key: gameKey,
@@ -126,15 +145,10 @@ async function seedPlaybooksForGame(gameKey: string, folderName: string) {
   const basePath = path.join(playbooksDir, 'base.json');
   const basePlaybook = await readJsonFile<BasePlaybook>(basePath);
 
-  if (!basePlaybook.version) {
-    throw new Error(`[SEED] Base playbook must have a version: ${basePath}`);
-  }
+  validateBasePlaybookSeed(basePlaybook, basePath);
 
-  if (!Array.isArray(basePlaybook.template)) {
-    throw new Error(`[SEED] Base playbook template must be an array: ${basePath}`);
-  }
 
-  const playbookEntries = Object.entries(apocalypseWorldPlaybookSpecificSections);
+  const playbookEntries = Object.entries(specificSections);
 
   if (playbookEntries.length === 0) {
     throw new Error(
@@ -145,7 +159,7 @@ async function seedPlaybooksForGame(gameKey: string, folderName: string) {
   for (const [playbookName, specificSections] of playbookEntries) {
     const template = buildPlaybookTemplate(
       basePlaybook.template,
-      specificSections as SeedTemplateSection[],
+      specificSections,
     );
 
     await prisma.playbook.upsert({
@@ -157,26 +171,111 @@ async function seedPlaybooksForGame(gameKey: string, folderName: string) {
         },
       },
       update: {
-        description: `${playbookName} playbook for Apocalypse World.`,
+        description: `${playbookName} playbook for ${game.name}.`,
         template,
       },
       create: {
         gameId: game.id,
         name: playbookName,
         version: basePlaybook.version,
-        description: `${playbookName} playbook for Apocalypse World.`,
+        description: `${playbookName} playbook for ${game.name}.`,
         template,
       },
     });
   }
+
+  return playbookEntries.length;
+}
+
+async function seedPlaybooksForExistingGames() {
+  const games = await prisma.game.findMany({
+    orderBy: {
+      key: 'asc',
+    },
+  });
+
+  let playbooksCount = 0;
+
+  for (const game of games) {
+    const playbookSeedConfig = PLAYBOOK_SEEDS_BY_GAME_KEY[game.key];
+
+    if (!playbookSeedConfig) {
+      continue;
+    }
+
+    playbooksCount += await seedPlaybooksForGame(game.key, playbookSeedConfig);
+  }
+
+  return playbooksCount;
+}
+
+function assertNonEmptyString(
+  value: unknown,
+  fieldName: string,
+  source: string,
+): asserts value is string {
+  if (typeof value !== 'string' || value.trim().length === 0) {
+    throw new Error(`[SEED] Invalid field "${fieldName}" in ${source}`);
+  }
+}
+
+function validateSystemsSeed(systems: SeedSystem[], source: string) {
+  if (!Array.isArray(systems)) {
+    throw new Error(`[SEED] Systems seed must be an array: ${source}`);
+  }
+
+  if (systems.length === 0) {
+    throw new Error(`[SEED] Systems seed cannot be empty: ${source}`);
+  }
+
+  systems.forEach((system, index) => {
+    assertNonEmptyString(system.key, `systems[${index}].key`, source);
+    assertNonEmptyString(system.name, `systems[${index}].name`, source);
+  });
+}
+
+function validateGamesSeed(games: SeedGame[], source: string) {
+  if (!Array.isArray(games)) {
+    throw new Error(`[SEED] Games seed must be an array: ${source}`);
+  }
+
+  if (games.length === 0) {
+    throw new Error(`[SEED] Games seed cannot be empty: ${source}`);
+  }
+
+  games.forEach((game, index) => {
+    assertNonEmptyString(game.key, `games[${index}].key`, source);
+    assertNonEmptyString(game.name, `games[${index}].name`, source);
+    assertNonEmptyString(game.systemKey, `games[${index}].systemKey`, source);
+  });
+}
+
+function validateBasePlaybookSeed(
+  basePlaybook: BasePlaybook,
+  source: string,
+) {
+  if (!Number.isInteger(basePlaybook.version) || basePlaybook.version < 1) {
+    throw new Error(`[SEED] Base playbook must have a valid version: ${source}`);
+  }
+
+  if (!Array.isArray(basePlaybook.template)) {
+    throw new Error(`[SEED] Base playbook template must be an array: ${source}`);
+  }
+
+  if (basePlaybook.template.length === 0) {
+    throw new Error(`[SEED] Base playbook template cannot be empty: ${source}`);
+  }
 }
 
 async function main() {
-  await seedSystems();
-  await seedGames();
-  await seedPlaybooksForGame('AW', 'apocalypse-world');
+  const systemsCount = await seedSystems();
+  const gamesCount = await seedGames();
+  const playbooksCount = await seedPlaybooksForExistingGames();
 
-  console.log('✅ Seeding completado con éxito.');
+  console.log('\n✅ Seed finalizado correctamente.');
+  console.log(`Systems creados/actualizados: ${systemsCount}`);
+  console.log(`Games creados/actualizados: ${gamesCount}`);
+  console.log(`Playbooks creados/actualizados: ${playbooksCount}`);
 }
 
 main()
