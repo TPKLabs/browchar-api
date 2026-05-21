@@ -1,18 +1,17 @@
 model Character {
-  id              String    @id @default(cuid())
+  id              String              @id @default(cuid())
   name            String
   ownerId         String
+  values          Json
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  deletedAt       DateTime?
   playbookId      String
   playbookVersion Int
-  values          Json
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
-
-  players   Player[] // “Pertenencia” indirecta: en qué campañas se usa este personaje
-  owner     User                @relation(fields: [ownerId], references: [id])
-  playbook  Playbook            @relation(fields: [playbookId], references: [id])
-  campaigns CampaignCharacter[]
+  campaigns       CampaignCharacter[]
+  owner           User                @relation(fields: [ownerId], references: [id])
+  playbook        Playbook            @relation(fields: [playbookId], references: [id])
+  players         Player[]
 
   @@index([ownerId])
   @@index([playbookId])

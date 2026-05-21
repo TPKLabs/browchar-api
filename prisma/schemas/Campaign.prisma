@@ -1,20 +1,18 @@
 model Campaign {
-  id          String    @id @default(cuid())
-  gameId      String // es necesario?
+  id          String              @id @default(cuid())
+  gameId      String
   name        String
   description String?
   ownerId     String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
   archivedAt  DateTime?
-
-  game  Game @relation(fields: [gameId], references: [id])
-  owner User @relation("CampaignOwner", fields: [ownerId], references: [id])
-
-  players    Player[]
-  characters CampaignCharacter[]
-  user       User?               @relation(fields: [userId], references: [id])
-  userId     String?
+  userId      String?
+  game        Game                @relation(fields: [gameId], references: [id])
+  owner       User                @relation("CampaignOwner", fields: [ownerId], references: [id])
+  user        User?               @relation(fields: [userId], references: [id])
+  characters  CampaignCharacter[]
+  players     Player[]
 
   @@index([gameId])
   @@index([ownerId])

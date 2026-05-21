@@ -1,14 +1,13 @@
 model Playbook {
-  id          String   @id @default(cuid())
+  id          String      @id @default(cuid())
   gameId      String
   name        String
   version     Int
-  template      Json
-  createdAt   DateTime @default(now())
+  createdAt   DateTime    @default(now())
   description String?
-
-  game       Game        @relation(fields: [gameId], references: [id])
-  characters Character[]
+  template    Json
+  characters  Character[]
+  game        Game        @relation(fields: [gameId], references: [id])
 
   @@unique([gameId, name, version])
 }

@@ -38,10 +38,15 @@ Abrir Prisma Studio:
 ```npx prisma studio```
 
 ### DB
-Levantar la DB:
-```docker compose up -d```
+
+Chequeá si el contenedor está corriendo:
+```docker ps```
 
 ```docker compose ps```
+
+Correr la DB:
+```docker compose up -d```
+
 
 Detén y borra los volúmenes:
 ```docker compose down -v```

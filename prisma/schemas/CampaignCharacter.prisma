@@ -1,19 +1,14 @@
 model CampaignCharacter {
-  id          String @id @default(cuid())
+  id          String    @id @default(cuid())
   campaignId  String
   characterId String
+  isNpc       Boolean   @default(false)
+  notes       String?
+  createdAt   DateTime  @default(now())
+  campaign    Campaign  @relation(fields: [campaignId], references: [id])
+  character   Character @relation(fields: [characterId], references: [id])
 
-  // Para marcar NPCs o personajes “de la campaña”
-  isNpc Boolean @default(false)
-
-  // Metadata útil (opcional)
-  notes     String?
-  createdAt DateTime @default(now())
-
-  campaign  Campaign  @relation(fields: [campaignId], references: [id])
-  character Character @relation(fields: [characterId], references: [id])
-
-  @@unique([campaignId, characterId]) // el mismo pj no se repite en la misma campaña
+  @@unique([campaignId, characterId])
   @@index([campaignId])
   @@index([characterId])
 }

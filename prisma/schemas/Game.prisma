@@ -1,13 +1,12 @@
 model Game {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   systemId  String
-  key       String   @unique // "MASKS", "AW", "DND5E_PHB", "VTM5"
-  name      String // "Masks: A New Generation"
-  createdAt DateTime @default(now())
-
+  key       String     @unique
+  name      String
+  createdAt DateTime   @default(now())
+  campaigns Campaign[]
   system    System     @relation(fields: [systemId], references: [id])
   playbooks Playbook[]
-  campaigns Campaign[]
 
   @@index([systemId])
 }

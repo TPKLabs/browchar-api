@@ -1,8 +1,7 @@
 model System {
   id        String   @id @default(cuid())
-  key       String   @unique // "PBTA", "DND5E", "VTM5"
+  key       String   @unique
   name      String
   createdAt DateTime @default(now())
-
-  games Game[]
+  games     Game[]
 }

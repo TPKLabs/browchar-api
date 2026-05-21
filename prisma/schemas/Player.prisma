@@ -1,15 +1,14 @@
 model Player {
-  id          String    @id @default(cuid())
+  id          String     @id @default(cuid())
   campaignId  String
   userId      String
   role        TableRole
-  characterId String? // opcional: puede no tener personaje asignado si es GM por ej
+  characterId String?
+  campaign    Campaign   @relation(fields: [campaignId], references: [id])
+  character   Character? @relation(fields: [characterId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
 
-  campaign  Campaign   @relation(fields: [campaignId], references: [id])
-  user      User       @relation(fields: [userId], references: [id])
-  character Character? @relation(fields: [characterId], references: [id])
-
-  @@unique([campaignId, userId]) // un usuario no se repite en la misma mesa
+  @@unique([campaignId, userId])
   @@unique([campaignId, characterId])
   @@index([characterId])
   @@index([campaignId])
