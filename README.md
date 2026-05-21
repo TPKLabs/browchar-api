@@ -110,3 +110,9 @@ Ejemplos: Masks, Apocalypse World, D&D 5e, Vampiro 5e
 - Agregar NPC: se asocia un Character a una Campaign como NPC
 
 - Asignar Character: un Player asigna su personaje dentro de la Campaign
+
+---
+
+## Documentation
+
+- [MVP](./docs/product/mvp.md)
