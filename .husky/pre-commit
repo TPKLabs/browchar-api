@@ -1,0 +1,11 @@
+# Lint and format staged files
+npx lint-staged
+
+# Type check
+npx tsc --noEmit
+
+# Validate Prisma schema
+npx prisma validate
+
+# Run unit tests
+npx jest --passWithNoTests --bail
