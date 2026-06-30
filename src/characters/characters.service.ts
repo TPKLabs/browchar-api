@@ -7,9 +7,7 @@ import type {
   ListCharactersQuery,
   Paginated,
 } from '@/common/types/character.types';
-
-const DEFAULT_PAGE = 1;
-const DEFAULT_PAGE_SIZE = 20;
+import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/common/pagination';
 
 @Injectable()
 export class CharactersService {
