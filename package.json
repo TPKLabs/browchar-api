@@ -76,7 +76,11 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^@db$": "<rootDir>/../db.ts",
+      "^@/(.*)$": "<rootDir>/$1"
+    }
   },
   "lint-staged": {
     "*.ts": [
