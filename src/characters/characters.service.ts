@@ -1,4 +1,9 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import prisma from '@db';
 import { type Prisma } from '../../prisma/generated/client';
 import type {
@@ -8,34 +13,67 @@ import type {
   Paginated,
 } from '@/common/types/character.types';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/common/pagination';
+import { validateValuesAgainstTemplate } from './template-validation';
 
 @Injectable()
 export class CharactersService {
   private readonly logger = new Logger(CharactersService.name);
 
   /**
-   * POST /characters — base.
-   * Resuelve el Playbook y persiste el personaje con su `playbookVersion`.
-   * La validación de `values` contra el template del Playbook se implementa
-   * en DEV-48; la lógica de create definitiva, en DEV-49.
+   * POST /characters.
+   * Valida `values` contra el `template` del Playbook y persiste el personaje
+   * con su `playbookVersion`. Sin auth todavía: `ownerId` llega en el body en
+   * modo dev (DEV-5 lo moverá al token).
    */
   async create(input: CreateCharacterInput): Promise<CharacterView> {
+    // 1) El owner debe existir (modo dev: ownerId viene en el body).
+    const owner = await prisma.user.findUnique({
+      where: { id: input.ownerId },
+      select: { id: true },
+    });
+    if (!owner) {
+      throw new NotFoundException(`User ${input.ownerId} no encontrado`);
+    }
+
+    // 2) Resolver el Playbook y su versión + template.
     const playbook = await prisma.playbook.findUnique({
       where: { id: input.playbookId },
-      select: { id: true, version: true },
+      select: { id: true, name: true, version: true, template: true },
     });
-
     if (!playbook) {
       throw new NotFoundException(`Playbook ${input.playbookId} no encontrado`);
     }
 
+    // 3) Completar los campos derivados que no son input libre del usuario:
+    //    - character_name refleja el `name` del body (la columna es la fuente de verdad);
+    //    - playbook_name sale del Playbook elegido (set predefinido).
+    //    El cliente no manda estos campos; el servidor los inyecta.
+    const effectiveValues: Record<string, unknown> = {
+      ...input.values,
+      character_name: input.name,
+      playbook_name: playbook.name,
+    };
+
+    // 4) Validar `effectiveValues` contra el template (DEV-48).
+    const errors = validateValuesAgainstTemplate(
+      effectiveValues,
+      playbook.template,
+    );
+    if (errors.length > 0) {
+      throw new BadRequestException({
+        message: 'Los datos del personaje no son válidos para el Playbook',
+        errors,
+      });
+    }
+
+    // 5) Persistir (Prisma directo, sin repository — CLAUDE.md).
     const character = await prisma.character.create({
       data: {
         name: input.name,
-        ownerId: input.ownerId,
+        ownerId: owner.id,
         playbookId: playbook.id,
         playbookVersion: playbook.version,
-        values: input.values as Prisma.InputJsonValue,
+        values: effectiveValues as Prisma.InputJsonValue,
       },
     });
 
@@ -44,10 +82,8 @@ export class CharactersService {
   }
 
   /**
-   * GET /characters — base.
-   * Devuelve el envelope `data`/`meta` con filtros por `playbookId`, `gameId`
-   * (vía playbook.game) y `search`. Paginación/orden se afinan en DEV-58 y los
-   * filtros se completan en DEV-57.
+   * GET /characters — listado con envelope `data`/`meta` y filtros por
+   * `playbookId`, `gameId` (vía playbook.game) y `search`. Respeta soft-delete.
    */
   async findAll(query: ListCharactersQuery): Promise<Paginated<CharacterView>> {
     const page = query.page && query.page > 0 ? query.page : DEFAULT_PAGE;
@@ -77,19 +113,16 @@ export class CharactersService {
   }
 
   /**
-   * GET /characters/:id — base.
-   * Respeta soft-delete. Las validaciones de acceso/ownership y el detalle de
-   * errores se completan en DEV-64.
+   * GET /characters/:id — detalle. Respeta soft-delete. Las validaciones de
+   * acceso/ownership se completan en DEV-64.
    */
   async findOne(id: string): Promise<CharacterView> {
     const character = await prisma.character.findFirst({
       where: { id, deletedAt: null },
     });
-
     if (!character) {
       throw new NotFoundException(`Character ${id} no encontrado`);
     }
-
     return character;
   }
 }

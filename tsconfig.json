@@ -9,6 +9,7 @@
         "src/*"
       ]
     },
+    "types": ["node", "jest"],
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "target": "ES2023",
