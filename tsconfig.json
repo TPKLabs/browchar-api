@@ -2,7 +2,7 @@
   "compilerOptions": {
     "paths": {
       "@db": [
-        "./db.ts"
+        "./db"
       ],
       "@/*": [
         "./src/*"
