@@ -1,5 +1,5 @@
 import { Test } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { jest, describe, it, beforeEach, expect } from '@jest/globals';
 import { CharactersService } from './characters.service';
 import prisma from '@db';
@@ -7,6 +7,9 @@ import prisma from '@db';
 jest.mock('@db', () => ({
   __esModule: true,
   default: {
+    user: {
+      findUnique: jest.fn(),
+    },
     playbook: {
       findUnique: jest.fn(),
     },
@@ -22,6 +25,7 @@ jest.mock('@db', () => ({
 type AsyncMock = jest.Mock<(...args: any[]) => Promise<any>>;
 
 const prismaMock = prisma as unknown as {
+  user: { findUnique: AsyncMock };
   playbook: { findUnique: AsyncMock };
   character: {
     create: AsyncMock;
@@ -31,7 +35,8 @@ const prismaMock = prisma as unknown as {
   };
 };
 
-const mockPlaybook = { id: 'pb-1', version: 2 };
+const mockOwner = { id: 'user-1' };
+const mockPlaybook = { id: 'pb-1', name: 'El Bruto', version: 2, template: [] };
 
 const mockCharacter = {
   id: 'char-1',
@@ -65,7 +70,23 @@ describe('CharactersService', () => {
       values: { moves: [] },
     };
 
+    it('throws BadRequestException when ownerId is missing', async () => {
+      await expect(service.create({ ...input, ownerId: '' })).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prismaMock.user.findUnique).not.toHaveBeenCalled();
+      expect(prismaMock.character.create).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when owner does not exist', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      await expect(service.create(input)).rejects.toThrow(NotFoundException);
+      expect(prismaMock.character.create).not.toHaveBeenCalled();
+    });
+
     it('throws NotFoundException when playbook does not exist', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(mockOwner);
       prismaMock.playbook.findUnique.mockResolvedValue(null);
 
       await expect(service.create(input)).rejects.toThrow(NotFoundException);
@@ -73,6 +94,7 @@ describe('CharactersService', () => {
     });
 
     it('persists character with playbookVersion from resolved playbook', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(mockOwner);
       prismaMock.playbook.findUnique.mockResolvedValue(mockPlaybook);
       prismaMock.character.create.mockResolvedValue(mockCharacter);
 

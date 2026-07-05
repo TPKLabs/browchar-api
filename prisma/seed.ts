@@ -1,10 +1,13 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { Logger } from '@nestjs/common';
 import prisma from '@db';
 import type { Prisma } from './generated/client';
 import type { TemplateSection } from '../src/common/types/template.types';
 
 import { apocalypseWorldPlaybookSpecificSections } from '../data/playbooks/apocalypse-world/playbookSections';
+
+const logger = new Logger('Seed');
 
 type SeedSystem = {
   key: string;
@@ -147,7 +150,6 @@ async function seedPlaybooksForGame(
 
   validateBasePlaybookSeed(basePlaybook, basePath);
 
-
   const playbookEntries = Object.entries(specificSections);
 
   if (playbookEntries.length === 0) {
@@ -250,16 +252,17 @@ function validateGamesSeed(games: SeedGame[], source: string) {
   });
 }
 
-function validateBasePlaybookSeed(
-  basePlaybook: BasePlaybook,
-  source: string,
-) {
+function validateBasePlaybookSeed(basePlaybook: BasePlaybook, source: string) {
   if (!Number.isInteger(basePlaybook.version) || basePlaybook.version < 1) {
-    throw new Error(`[SEED] Base playbook must have a valid version: ${source}`);
+    throw new Error(
+      `[SEED] Base playbook must have a valid version: ${source}`,
+    );
   }
 
   if (!Array.isArray(basePlaybook.template)) {
-    throw new Error(`[SEED] Base playbook template must be an array: ${source}`);
+    throw new Error(
+      `[SEED] Base playbook template must be an array: ${source}`,
+    );
   }
 
   if (basePlaybook.template.length === 0) {
@@ -267,21 +270,38 @@ function validateBasePlaybookSeed(
   }
 }
 
+async function seedUsers() {
+  // Usuario demo SOLO para desarrollo (sin auth todavía, DEV-5).
+  // Permite probar POST /characters usando ownerId: "usr_demo".
+  const demo = await prisma.user.upsert({
+    where: { email: 'demo@browchar.dev' },
+    update: {},
+    create: {
+      id: 'usr_demo',
+      email: 'demo@browchar.dev',
+      passwordHash: 'dev-only-not-a-real-hash',
+    },
+  });
+
+  return demo;
+}
+
 async function main() {
+  const demoUser = await seedUsers();
   const systemsCount = await seedSystems();
   const gamesCount = await seedGames();
   const playbooksCount = await seedPlaybooksForExistingGames();
 
-  console.log('\n✅ Seed finalizado correctamente.');
-  console.log(`Systems creados/actualizados: ${systemsCount}`);
-  console.log(`Games creados/actualizados: ${gamesCount}`);
-  console.log(`Playbooks creados/actualizados: ${playbooksCount}`);
+  logger.log('Seed finalizado correctamente.');
+  logger.log(`Systems creados/actualizados: ${systemsCount}`);
+  logger.log(`Games creados/actualizados: ${gamesCount}`);
+  logger.log(`Playbooks creados/actualizados: ${playbooksCount}`);
+  logger.log(`Usuario demo (dev): ${demoUser.id}`);
 }
 
 main()
   .catch((error) => {
-    console.error('❌ Error ejecutando seed');
-    console.error(error);
+    logger.error('Error ejecutando seed', error);
     process.exit(1);
   })
   .finally(async () => {

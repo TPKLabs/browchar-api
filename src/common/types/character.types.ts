@@ -22,6 +22,12 @@ export interface CreateCharacterInput {
   ownerId: string;
 }
 
+/** Un error de validación de un campo de `values` contra el template. */
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
 /** Query de GET /characters: filtros + paginación. */
 export interface ListCharactersQuery {
   playbookId?: string;
