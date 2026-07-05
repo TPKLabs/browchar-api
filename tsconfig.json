@@ -1,12 +1,11 @@
 {
   "compilerOptions": {
-    "baseUrl": "./",
     "paths": {
       "@db": [
-        "./db.ts"
+        "./db"
       ],
       "@/*": [
-        "src/*"
+        "./src/*"
       ]
     },
     "types": ["node", "jest"],
