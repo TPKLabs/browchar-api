@@ -1,29 +1,8 @@
-# Lint and format staged files
-npx lint-staged
-
-# Type check
-npx tsc --noEmit
-
-# Validate Prisma schema
-npx prisma validate
-
-# Run unit tests
-npx jest --passWithNoTests --bail
-
-# Check that new modules have a corresponding service spec file
-NEW_MODULES=$(git diff --cached --name-only --diff-filter=A | grep '\.module\.ts$' || true)
-if [ -n "$NEW_MODULES" ]; then
-  MISSING=""
-  for MODULE in $NEW_MODULES; do
-    DIR=$(dirname "$MODULE")
-    BASENAME=$(basename "$MODULE" .module.ts)
-    SPEC="$DIR/$BASENAME.service.spec.ts"
-    if [ ! -f "$SPEC" ]; then
-      MISSING="$MISSING\n  - $SPEC"
-    fi
-  done
-  if [ -n "$MISSING" ]; then
-    echo "Missing service spec files for new modules:$MISSING"
-    exit 1
-  fi
-fi
+# Lint + format staged files, and enforce paired specs (via lint-staged)
+npx lint-staged &&
+  # Type check the whole project
+  npx tsc --noEmit &&
+  # Validate the Prisma schema
+  npx prisma validate &&
+  # Run unit tests, stop on first failure
+  npx jest --passWithNoTests --bail

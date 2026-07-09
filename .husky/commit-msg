@@ -1,2 +1,4 @@
-# Append an entry to CHANGELOG.md for this commit, staged into the same commit.
-node scripts/update-changelog.mjs "$1"
+# 1. Validate the message follows Conventional Commits (see commitlint.config.mjs)
+npx --no-install commitlint --edit "$1" &&
+  # 2. Append CHANGELOG.md entries, staged into the same commit
+  node scripts/update-changelog.mjs "$1"
