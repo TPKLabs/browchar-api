@@ -55,6 +55,9 @@ Add a body when the *what* in the subject isn't enough and the *why* matters. Se
 
 - **Breaking changes:** add `!` after the type/scope (e.g. `feat(api)!: ...`) **and** a footer line starting with `BREAKING CHANGE:` describing the break and the migration path.
 - **References:** link related issues or tickets in the footer (e.g. `Refs: #123` or `Closes #123`).
+- **Known issues:** if the commit surfaces a bug that is *not* being fixed now, add a footer line `Known-issue: <description>`. This is picked up automatically and logged in `CHANGELOG.md` under "Known Issues" — see the `changelog` skill. Be specific enough that someone picking it up later doesn't need to re-discover the bug.
+- **Future considerations:** if the commit makes a decision, trade-off, or change that has implications, risks, or required follow-ups later (migration paths, potential conflicts, things that will need revisiting), add a footer line `Future-consideration: <description>`. This is also logged automatically in `CHANGELOG.md` under "Future Considerations". Detail *what* the consideration is and *why* it matters — not just "revisit this".
+- **Resolving a known issue:** before writing a commit, check `CHANGELOG.md`'s `### Known Issues` section — if this change fixes one of those entries, add a footer line `Resolves-known-issue: <snippet of the existing entry>`. The snippet just needs to match part of the existing bullet text; it removes that entry from `CHANGELOG.md` (and drops the section header too if it was the last one) instead of leaving a stale issue around. If the change only partially resolves or reshapes a known issue rather than fully fixing it, edit the bullet text in `CHANGELOG.md` directly in the same commit instead — the footer is for full removals only.
 
 ## Examples
 
@@ -92,6 +95,37 @@ feat(api)!: return user object instead of array
 BREAKING CHANGE: GET /users now returns a paginated object
 { data, total } instead of a bare array. Clients must read
 the `data` field.
+```
+
+**Example 6 — fix with a known issue left open**
+Input: Arreglé el timeout en el login, pero noté que los tokens expirados no invalidan la sesión — eso lo dejamos para después
+Output:
+```
+fix(auth): resolve login request timeout
+
+Known-issue: expired tokens don't invalidate the session server-side,
+so a stale session can still make authenticated requests until the
+token is refreshed. Needs a session-invalidation check on token expiry.
+```
+
+**Example 7 — change with a future consideration**
+Input: Cambié el seed de desarrollo para usar IDs incrementales en vez de UUIDs, más fácil para debuggear
+Output:
+```
+chore(seed): use incremental ids in dev seed data
+
+Future-consideration: dev seed IDs no longer match the UUID format
+used in staging/prod. Any fixture or test that hardcodes a UUID-shaped
+id will need updating if it starts asserting on id format.
+```
+
+**Example 8 — fix that resolves an existing known issue**
+Input: Arreglé que los tokens expirados no invalidaban la sesión (ya estaba anotado como known issue)
+Output:
+```
+fix(auth): invalidate session on token expiry
+
+Resolves-known-issue: expired tokens don't invalidate the session
 ```
 
 ## Common mistakes to avoid

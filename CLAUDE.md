@@ -16,6 +16,7 @@ REST API for managing tabletop RPG character sheets. Built with NestJS, Prisma, 
 - `first-setup` — onboarding a new dev or setting up from scratch
 - `pre-commit` — understanding or modifying the pre-commit checks
 - `commit-conventions` — writing commit messages
+- `changelog` — understanding or modifying the automatic CHANGELOG.md updater
 
 ## Architecture
 

@@ -1,0 +1,2 @@
+# Append an entry to CHANGELOG.md for this commit, staged into the same commit.
+node scripts/update-changelog.mjs "$1"
