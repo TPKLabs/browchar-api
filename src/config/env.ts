@@ -38,8 +38,20 @@ function parseNodeEnv(value: string | undefined): NodeEnv {
   throw new Error('[ENV] NODE_ENV must be development, test or production');
 }
 
+function parseCorsOrigins(value: string | undefined): string[] {
+  if (!value) {
+    return ['http://localhost:3001'];
+  }
+
+  return value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
+}
+
 export const env = {
   NODE_ENV: parseNodeEnv(process.env.NODE_ENV),
   PORT: parsePort(process.env.PORT),
   DATABASE_URL: getRequiredEnv('DATABASE_URL'),
+  CORS_ORIGIN: parseCorsOrigins(process.env.CORS_ORIGIN),
 } as const;

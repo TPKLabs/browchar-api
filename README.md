@@ -21,38 +21,39 @@ Backend para gestionar hojas de personaje multi-sistema (PBTA, D&D, Vampiro, etc
 - **Prisma ORM**
 
 ---
+
 ### PRISMA
+
 Formatear schema:
-```npx prisma format```
+`npx prisma format`
 
 Validar schema:
-```npx prisma validate```
+`npx prisma validate`
 
 Generar Prisma Client:
-```npx prisma generate```
+`npx prisma generate`
 
 Aplicar migraciones:
-```npx prisma migrate dev```
+`npx prisma migrate dev`
 
 Abrir Prisma Studio:
-```npx prisma studio```
+`npx prisma studio`
 
 ### DB
 
 Chequeá si el contenedor está corriendo:
-```docker ps```
+`docker ps`
 
-```docker compose ps```
+`docker compose ps`
 
 Correr la DB:
-```docker compose up -d```
-
+`docker compose up -d`
 
 Detén y borra los volúmenes:
-```docker compose down -v```
+`docker compose down -v`
 
 Seedear la base de datos:
-``` npx prisma db seed ```
+`npx prisma db seed`
 (esto sólo la va a popular con lo que está declarado en el archivo prisma\seed.ts)
 
 ---
@@ -60,46 +61,53 @@ Seedear la base de datos:
 ## Modelo de datos (resumen)
 
 #### User
+
 - Cuenta global del sistema.
 - Dueño de personajes (Characters)
 - Puede crear y administrar Campaigns
 - Participa en Campaigns como Player
 
 #### System
+
 - Familia de reglas / motor base el juego.
-Ejemplos: PBTA, DND5E, VTM5
+  Ejemplos: PBTA, DND5E, VTM5
 
 #### Game
+
 - Juego concreto dentro de un System.
-Ejemplos: Masks, Apocalypse World, D&D 5e, Vampiro 5e
+  Ejemplos: Masks, Apocalypse World, D&D 5e, Vampiro 5e
 
 #### Playbook
+
 - Definición de hoja / playbook.
 - Contiene el schema JSON que define campos y validaciones
 - Versionado para evitar romper personajes existentes
 
 #### Player
+
 - Membresía de un User dentro de una Campaign, puede tener un Character asignado o no
 - Define el rol (GM / Player)
 
 #### Character
+
 - Instancia de personaje basado en un Playbook.
 - Pertenece a un User
 - Puede reutilizarse en múltiples Campaigns
 
 #### CampaignCharacter
+
 - Asocia Characters a una Campaign.
 - Permite NPCs (Characters sin Player)
 - Guarda metadata contextual (ej. notas, flags)
 
 #### Campaign
+
 - Instancia de juego en curso (mesa/campaña).
 - Pertenece a un Game
 - Tiene un owner (User)
 - Mantiene un roster de PCs y NPCs
 
 ---
-
 
 ## Flujos principales
 
@@ -116,3 +124,5 @@ Ejemplos: Masks, Apocalypse World, D&D 5e, Vampiro 5e
 ## Documentation
 
 - [MVP](./docs/product/mvp.md)
+- [REST conventions](./docs/api/rest-conventions.md)
+- [Frontend/backend repo architecture](./docs/architecture/frontend-backend-integration.md)
