@@ -162,9 +162,10 @@ considerations (minimal scope, expiration, leak response) and the CI checklist.
 After `npm install`, husky sets up Git hooks automatically. On every commit:
 
 1. **lint-staged** runs ESLint (`--fix`) and Prettier (`--write`) on staged `.ts` files — **this modifies your files in place** before the commit goes through. Review the diff after a failed commit if files changed unexpectedly.
-2. TypeScript type-check (`tsc --noEmit`)
-3. Prisma schema validation
-4. Unit tests
+2. **Contracts version check** — changes to `packages/contracts` published source must bump the package version in the same commit (see the `pre-commit` skill)
+3. TypeScript type-check (`tsc --noEmit`)
+4. Prisma schema validation
+5. Unit tests
 
 > In CI environments (`CI=true`), husky is skipped automatically — hooks only run locally.
 

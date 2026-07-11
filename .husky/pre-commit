@@ -1,5 +1,7 @@
 # Lint + format staged files, and enforce paired specs (via lint-staged)
 npx lint-staged &&
+  # Contracts package changes must bump its version (publish reminder)
+  node scripts/check-contracts-version.mjs &&
   # Type check the whole project
   npx tsc --noEmit &&
   # Validate the Prisma schema
