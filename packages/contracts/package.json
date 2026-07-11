@@ -1,0 +1,37 @@
+{
+  "name": "@tpklabs/browchar-contracts",
+  "version": "0.1.0",
+  "description": "Contratos compartidos FE/BE de browchar: schemas Zod y tipos de dominio. Fuente de verdad única (DEV-153).",
+  "license": "UNLICENSED",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TPKLabs/browchar-api.git",
+    "directory": "packages/contracts"
+  },
+  "peerDependencies": {
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "zod": "^4.4.3"
+  }
+}

@@ -9,11 +9,8 @@ import type { Character } from '../../../prisma/generated/client';
  * template del Playbook, en DEV-48.
  */
 
-/** Un error de validación de un campo de `values` contra el template. */
-export interface ValidationError {
-  field: string;
-  message: string;
-}
+/** DEV-153: `ValidationError` vive en `@tpklabs/browchar-contracts` (contrato compartido). */
+export type { ValidationError } from '@tpklabs/browchar-contracts';
 
 /** Metadata de paginación del envelope estándar. */
 export interface PaginationMeta {

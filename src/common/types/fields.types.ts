@@ -1,23 +1,7 @@
-export enum FieldType {
-  TEXT = 'TEXT',
-  TEXTAREA = 'TEXTAREA',
-  TEXTNUMBER = 'TEXTNUMBER',
-  COUNTER = 'COUNTER',
-  PROGRESS = 'PROGRESS',
-  SELECT = 'SELECT',
-  CHECKBOX = 'CHECKBOX',
-  RADIO = 'RADIO',
-}
-
-export interface FieldDefinition {
-  id: string;
-  label: string;
-  description?: string;
-  required?: boolean;
-  type: FieldType;
-  defaultValue?: any;
-  maxValue?: any; // Solo para COUNTER y PROGRESS
-  disabled?: boolean;
-  isReadOnly?: boolean; // Campos de texto plano, como las Additional Rules
-  options?: any[]; // Solo para SELECT, CHECKBOX, RADIO
-}
+/**
+ * DEV-153: el vocabulario de dominio de fields ahora vive en el paquete
+ * compartido `@tpklabs/browchar-contracts` (fuente de verdad única FE/BE). Se re-exporta
+ * desde acá para no romper los imports internos (`@/common/types/fields.types`).
+ */
+export { FieldType } from '@tpklabs/browchar-contracts';
+export type { FieldDefinition, FieldOption } from '@tpklabs/browchar-contracts';

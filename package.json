@@ -5,12 +5,16 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "nest build",
+    "contracts:build": "npm run build --workspace @tpklabs/browchar-contracts",
+    "build": "npm run contracts:build && nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "nest start",
-    "start:dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
+    "start": "npm run contracts:build && nest start",
+    "start:dev": "npm run contracts:build && nest start --watch",
+    "start:debug": "npm run contracts:build && nest start --debug --watch",
     "start:prod": "node dist/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
@@ -23,6 +27,7 @@
     "prepare": "node -e \"if(process.env.CI) process.exit(0)\" || husky"
   },
   "dependencies": {
+    "@tpklabs/browchar-contracts": "^0.1.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
@@ -84,6 +89,7 @@
     "testEnvironment": "node",
     "moduleNameMapper": {
       "^@db$": "<rootDir>/../db.ts",
+      "^@tpklabs/browchar-contracts$": "<rootDir>/../packages/contracts/src/index.ts",
       "^@/(.*)$": "<rootDir>/$1"
     }
   }
