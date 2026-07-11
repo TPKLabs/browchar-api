@@ -12,7 +12,7 @@ import type {
   ListCharactersQuery,
 } from './character.schemas';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/common/pagination';
-import { validateValuesAgainstTemplate } from './template-validation';
+import { buildTemplateSchema } from '@tpklabs/browchar-contracts';
 
 @Injectable()
 export class CharactersService {
@@ -65,12 +65,16 @@ export class CharactersService {
       playbook_name: playbook.name,
     };
 
-    // 4) Validar `effectiveValues` contra el template (DEV-48).
-    const errors = validateValuesAgainstTemplate(
+    // 4) Validar `effectiveValues` contra el template (DEV-48, unificado en
+    //    DEV-153 vía el schema Zod compartido `buildTemplateSchema`).
+    const result = buildTemplateSchema(playbook.template).safeParse(
       effectiveValues,
-      playbook.template,
     );
-    if (errors.length > 0) {
+    if (!result.success) {
+      const errors = result.error.issues.map((issue) => ({
+        field: String(issue.path[0] ?? ''),
+        message: issue.message,
+      }));
       throw new BadRequestException({
         message: 'Los datos del personaje no son válidos para el Playbook',
         errors,

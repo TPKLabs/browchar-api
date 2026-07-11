@@ -55,6 +55,8 @@ src/
     <feature>.module.ts
     <feature>.controller.ts
     <feature>.service.ts
+packages/
+  contracts/            # @tpklabs/browchar-contracts — shared FE/BE Zod schemas + types
 prisma/
   schema.prisma         # generator + datasource
   schemas/              # one .prisma file per entity
@@ -71,19 +73,38 @@ db.ts                   # Prisma client singleton
 - `noImplicitAny` is off but avoid `any`. Prefer types inferred from Prisma generated output.
 - Do not repeat types that Prisma already generates. Import from `./prisma/generated/client`.
 - Shared types go in `src/common/types/*.types.ts`. Do not define ad-hoc types inside feature files.
+- Types/validation shared with `browchar-fe` live in `@tpklabs/browchar-contracts` — see below.
+
+## Shared contracts (`@tpklabs/browchar-contracts`)
+
+`packages/contracts` is an npm workspace holding the **single source of truth**
+for types and validation shared with `browchar-fe` (DEV-153). It exports the
+domain field types (`FieldType`, `FieldDefinition`, `TemplateSection`), the
+Characters request schemas (`createCharacterSchema`, `listCharactersQuerySchema`)
+and `buildTemplateSchema(template)` — the Zod validator for a character's
+`values` against its Playbook template.
+
+- Import via the package name: `import { buildTemplateSchema } from '@tpklabs/browchar-contracts';`
+- `src/common/types/{fields,template}.types.ts` re-export from it for backward
+  compatibility — new code should import from `@tpklabs/browchar-contracts` directly.
+- After editing the package, run `npm run contracts:build` so the API runtime
+  picks it up (tests resolve it from source via jest `moduleNameMapper`).
+- It publishes to GitHub Packages for the FE to consume — see
+  `packages/contracts/README.md` for the publish/consume flow.
 
 ## Path aliases
 
 Always use aliases over long relative paths.
 
-| Alias | Resolves to |
-|---|---|
-| `@db` | `./db.ts` (Prisma client singleton) |
-| `@/*` | `src/*` |
+| Alias                         | Resolves to                                   |
+| ----------------------------- | --------------------------------------------- |
+| `@db`                         | `./db.ts` (Prisma client singleton)           |
+| `@/*`                         | `src/*`                                       |
+| `@tpklabs/browchar-contracts` | `packages/contracts` (shared FE/BE contracts) |
 
 ```ts
 import prisma from '@db';
-import type { TemplateSection } from '@/common/types/template.types';
+import { buildTemplateSchema } from '@tpklabs/browchar-contracts';
 ```
 
 ## Prisma conventions
@@ -119,13 +140,13 @@ this.logger.error('...');
 
 ## File naming conventions
 
-| What | Pattern | Example |
-|---|---|---|
-| Controller | `<feature>.controller.ts` | `playbooks.controller.ts` |
-| Service | `<feature>.service.ts` | `playbooks.service.ts` |
-| Module | `<feature>.module.ts` | `playbooks.module.ts` |
-| Types | `<name>.types.ts` | `template.types.ts` |
-| Tests | `<name>.spec.ts` | `playbooks.service.spec.ts` |
+| What       | Pattern                   | Example                     |
+| ---------- | ------------------------- | --------------------------- |
+| Controller | `<feature>.controller.ts` | `playbooks.controller.ts`   |
+| Service    | `<feature>.service.ts`    | `playbooks.service.ts`      |
+| Module     | `<feature>.module.ts`     | `playbooks.module.ts`       |
+| Types      | `<name>.types.ts`         | `template.types.ts`         |
+| Tests      | `<name>.spec.ts`          | `playbooks.service.spec.ts` |
 
 Classes are PascalCase with the role as suffix: `PlaybooksController`, `PlaybooksService`, `PlaybooksModule`.
 
