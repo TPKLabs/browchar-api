@@ -5,9 +5,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PlaybooksModule } from './playbooks/playbooks.module';
 import { CharactersModule } from './characters/characters.module';
+import { GamesModule } from './games/games.module';
 
 @Module({
-  imports: [PlaybooksModule, CharactersModule],
+  imports: [PlaybooksModule, CharactersModule, GamesModule],
   controllers: [AppController],
   providers: [
     AppService,
