@@ -23,10 +23,21 @@ and back PRs look the same.
 
 ## PR title
 
-- Conventional Commits format: `type(scope): summary`, imperative mood, no
-  trailing period — matches the primary commit's subject line
-  (`feat(characters): add character creation endpoint`).
-- If a branch has multiple commits, the title summarizes the PR as a whole,
+Matches `browchar-fe` so front and back PRs look the same.
+
+- Ticket-driven work: the title **must** lead with the Jira ticket key and the
+  ticket's name, then the Conventional Commits subject, in the form
+  `<TICKET> <ticket name> — type(scope): summary`. The `<ticket name>` is the
+  Jira issue's own title (verbatim, or lightly trimmed if very long), not a
+  paraphrase — e.g.
+  `DEV-94 Playbooks: Listar (solo lectura) — feat(playbooks): support filtering GET /playbooks by gameId`.
+  Pull the exact name from Jira rather than inventing one. The branch already
+  carries the ticket (`<TICKET>/<kebab-summary>`), so read it from there.
+- Non-ticket work (chores/tooling with no ticket): plain Conventional Commits
+  format with no ticket reference, e.g. `chore(tooling): add commitlint config`.
+- The Conventional Commits subject is imperative mood, no trailing period, and
+  matches the primary commit's subject line.
+- If a branch has multiple commits, the subject summarizes the PR as a whole,
   not just the last commit.
 
 ## PR body
