@@ -1,0 +1,144 @@
+{
+  "id": "dungeon-world-base",
+  "gameId": "dungeon-world",
+  "name": "Dungeon World Base",
+  "version": 1,
+  "description": "Base playbook template for Dungeon World characters. It contains the common character sheet structure shared by every class.",
+  "template": [
+    {
+      "id": "identity",
+      "title": "Identity",
+      "description": "Core character details shared by every Dungeon World class.",
+      "fields": [
+        {
+          "id": "look",
+          "label": "Look",
+          "type": "TEXTAREA",
+          "description": "Choose one or two: body, eyes, hair, clothing.",
+          "defaultValue": ""
+        }
+      ]
+    },
+    {
+      "id": "level",
+      "title": "Level & Experience",
+      "description": "Advancement. You level up when your XP fills (XP needed = current level + 7).",
+      "fields": [
+        {
+          "id": "level",
+          "label": "Level",
+          "type": "TEXTNUMBER",
+          "defaultValue": 1
+        },
+        {
+          "id": "xp",
+          "label": "XP",
+          "type": "PROGRESS",
+          "defaultValue": 0,
+          "maxValue": 8
+        }
+      ]
+    },
+    {
+      "id": "stats",
+      "title": "Stats",
+      "description": "The six ability scores. Assign 16, 15, 13, 12, 9, 8.",
+      "fields": [
+        {
+          "id": "strength",
+          "label": "Strength",
+          "type": "TEXTNUMBER",
+          "defaultValue": 8
+        },
+        {
+          "id": "dexterity",
+          "label": "Dexterity",
+          "type": "TEXTNUMBER",
+          "defaultValue": 8
+        },
+        {
+          "id": "constitution",
+          "label": "Constitution",
+          "type": "TEXTNUMBER",
+          "defaultValue": 8
+        },
+        {
+          "id": "intelligence",
+          "label": "Intelligence",
+          "type": "TEXTNUMBER",
+          "defaultValue": 8
+        },
+        {
+          "id": "wisdom",
+          "label": "Wisdom",
+          "type": "TEXTNUMBER",
+          "defaultValue": 8
+        },
+        {
+          "id": "charisma",
+          "label": "Charisma",
+          "type": "TEXTNUMBER",
+          "defaultValue": 8
+        }
+      ]
+    },
+    {
+      "id": "combat",
+      "title": "Combat",
+      "description": "Hit points, armor, and coin. Max HP = your class base + your Constitution score.",
+      "fields": [
+        { "id": "hp", "label": "HP", "type": "COUNTER", "defaultValue": 0 },
+        {
+          "id": "armor",
+          "label": "Armor",
+          "type": "TEXTNUMBER",
+          "defaultValue": 0
+        },
+        {
+          "id": "coins",
+          "label": "Coins",
+          "type": "COUNTER",
+          "defaultValue": 0
+        }
+      ]
+    },
+    {
+      "id": "bonds",
+      "title": "Bonds",
+      "description": "Your connections to the other characters.",
+      "fields": [
+        {
+          "id": "bonds",
+          "label": "Bonds",
+          "type": "TEXTAREA",
+          "defaultValue": ""
+        }
+      ]
+    },
+    {
+      "id": "gear",
+      "title": "Gear",
+      "description": "Your equipment, weapons, and inventory.",
+      "fields": [
+        {
+          "id": "gear",
+          "label": "Gear",
+          "type": "TEXTAREA",
+          "defaultValue": ""
+        }
+      ]
+    },
+    {
+      "id": "notes",
+      "title": "Notes",
+      "fields": [
+        {
+          "id": "notes",
+          "label": "Notes",
+          "type": "TEXTAREA",
+          "defaultValue": ""
+        }
+      ]
+    }
+  ]
+}
