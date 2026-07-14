@@ -116,8 +116,20 @@ describe('CharactersService', () => {
   });
 
   describe('findAll', () => {
+    // La fila que devuelve Prisma trae el join `playbook.game` (el service lo
+    // pide con `include`); el envelope expone `playbookName`/`gameName` planos.
+    const mockCharacterRow = {
+      ...mockCharacter,
+      playbook: { name: 'El Bruto', game: { name: 'Apocalypse World' } },
+    };
+    const enrichedItem = {
+      ...mockCharacter,
+      playbookName: 'El Bruto',
+      gameName: 'Apocalypse World',
+    };
+
     beforeEach(() => {
-      prismaMock.character.findMany.mockResolvedValue([mockCharacter]);
+      prismaMock.character.findMany.mockResolvedValue([mockCharacterRow]);
       prismaMock.character.count.mockResolvedValue(1);
     });
 
@@ -125,9 +137,29 @@ describe('CharactersService', () => {
       const result = await service.findAll({});
 
       expect(result).toEqual({
-        data: [mockCharacter],
+        data: [enrichedItem],
         meta: { page: 1, pageSize: 20, total: 1 },
       });
+    });
+
+    it('enriches each item with resolved playbookName and gameName', async () => {
+      const result = await service.findAll({});
+
+      expect(result.data[0]).toMatchObject({
+        playbookName: 'El Bruto',
+        gameName: 'Apocalypse World',
+      });
+      // El objeto `playbook` anidado no se filtra al cliente.
+      expect(result.data[0]).not.toHaveProperty('playbook');
+      expect(prismaMock.character.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          include: {
+            playbook: {
+              select: { name: true, game: { select: { name: true } } },
+            },
+          },
+        }),
+      );
     });
 
     it('passes playbookId filter to prisma', async () => {

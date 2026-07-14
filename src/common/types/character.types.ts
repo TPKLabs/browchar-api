@@ -25,5 +25,19 @@ export interface Paginated<T> {
   meta: PaginationMeta;
 }
 
-/** Vista de Character expuesta por la API. */
+/** Vista de Character expuesta por la API (fila cruda: `POST /characters`, `GET /characters/:id`). */
 export type CharacterView = Character;
+
+/**
+ * Item del listado `GET /characters`: el Character enriquecido con los nombres
+ * resueltos de su Playbook y su Game, para que el front no tenga que cruzar
+ * `usePlaybooks` a mano para armar las tarjetas (DEV-60). Mismo criterio que
+ * `GET /playbooks`, que resuelve `gameId` → `game.gameName`.
+ *
+ * `campaignName` todavía no se resuelve: la relación Character↔Campaign existe
+ * en el modelo pero su feature es aparte.
+ */
+export type CharacterListItem = Character & {
+  playbookName: string;
+  gameName: string;
+};

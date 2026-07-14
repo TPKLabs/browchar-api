@@ -20,6 +20,7 @@ a known issue or a future consideration in a commit message.
 
 ### Future Considerations
 
+- CharacterListItem is defined by hand in both browchar-api and browchar-fe, so a change to the response shape on one side drifts silently from the other. Tracked in DEV-197 (move response types into @tpklabs/browchar-contracts as the single source of truth).
 - **`@tpklabs/browchar-contracts` se publica manual y es privado:** el publish es un `npm publish` manual (no hay CI) y el paquete es privado en GitHub Packages, así que los consumidores (`browchar-fe`) necesitan un `GITHUB_TOKEN` con `read:packages`. Mover el publish a un workflow de GitHub Actions con el `GITHUB_TOKEN` integrado cuando exista CI.
 - **`browchar-fe` sigue manteniendo sus tipos a mano (DEV-153):** el paquete compartido `@tpklabs/browchar-contracts` hoy lo consume solo `browchar-api`; el front conserva su `character-schema.ts` y `src/lib/types` hasta que una subtask lo migre al paquete, así que el riesgo de drift silencioso FE/BE persiste del lado del front hasta entonces.
 - **`packages/contracts` queda fuera del lint del repo:** `npm run lint` y lint-staged apuntan a `src/**`, así que el TS del paquete no pasa por ESLint/Prettier en el pre-commit (sí lo cubren el `tsc --noEmit` global y sus tests Jest propios). Extender los globs de lint a `packages/**`, o darle al paquete su propio lint, cuando haya CI.

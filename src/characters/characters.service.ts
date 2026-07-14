@@ -6,7 +6,11 @@ import {
 } from '@nestjs/common';
 import prisma from '@db';
 import { type Prisma } from '../../prisma/generated/client';
-import type { CharacterView, Paginated } from '@/common/types/character.types';
+import type {
+  CharacterListItem,
+  CharacterView,
+  Paginated,
+} from '@/common/types/character.types';
 import type {
   CreateCharacterInput,
   ListCharactersQuery,
@@ -93,8 +97,14 @@ export class CharactersService {
   /**
    * GET /characters — listado con envelope `data`/`meta` y filtros por
    * `playbookId`, `gameId` (vía playbook.game) y `search`. Respeta soft-delete.
+   *
+   * Cada item se enriquece con `playbookName`/`gameName` resueltos vía el join
+   * `playbook.game` (DEV-60), para que las tarjetas del front no dependan de
+   * cruzar el listado de playbooks a mano.
    */
-  async findAll(query: ListCharactersQuery): Promise<Paginated<CharacterView>> {
+  async findAll(
+    query: ListCharactersQuery,
+  ): Promise<Paginated<CharacterListItem>> {
     const page = query.page && query.page > 0 ? query.page : DEFAULT_PAGE;
     const pageSize =
       query.pageSize && query.pageSize > 0 ? query.pageSize : DEFAULT_PAGE_SIZE;
@@ -108,15 +118,28 @@ export class CharactersService {
         : {}),
     };
 
-    const [data, total] = await Promise.all([
+    const [rows, total] = await Promise.all([
       prisma.character.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
+        include: {
+          playbook: {
+            select: { name: true, game: { select: { name: true } } },
+          },
+        },
       }),
       prisma.character.count({ where }),
     ]);
+
+    const data: CharacterListItem[] = rows.map(
+      ({ playbook, ...character }) => ({
+        ...character,
+        playbookName: playbook.name,
+        gameName: playbook.game.name,
+      }),
+    );
 
     return { data, meta: { page, pageSize, total } };
   }
