@@ -1,4 +1,5 @@
-# MVP — RPG Character Manager 
+# MVP — RPG Character Manager
+
 Scope: Apocalypse World  
 Last updated: 2026-05-20
 
@@ -150,3 +151,20 @@ El MVP se considera completo cuando:
 - Los datos quedan persistidos en la base de datos.
 - El flujo principal funciona de punta a punta sin intervención manual en la base.
 - El README o documentación del proyecto explica cómo correr la app y probar el flujo principal.
+
+---
+
+## Qué viene después de R1
+
+Este MVP es el release **R1**. La secuencia de releases siguientes (R2 auth real, R3
+multi-juego/campañas) está definida en [`roadmap.md`](./roadmap.md), y el orden relativo de
+las features futuras en [`prioritization.md`](./prioritization.md).
+
+## Documentos de producto relacionados
+
+- [`personas.md`](./personas.md) — user personas del MVP.
+- [`user-journeys.md`](./user-journeys.md) — journeys secundarios y de error.
+- [`prioritization.md`](./prioritization.md) — priorización de features post-MVP (RICE).
+- [`onboarding.md`](./onboarding.md) — flujo de primer uso.
+- [`beta-feedback.md`](./beta-feedback.md) — canal y triage de feedback beta.
+- [`roadmap.md`](./roadmap.md) — releases R1/R2/R3.
