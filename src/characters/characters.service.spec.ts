@@ -285,7 +285,7 @@ describe('CharactersService', () => {
 
       expect(prismaMock.playbook.findUnique).not.toHaveBeenCalled();
       expect(prismaMock.character.update).toHaveBeenCalledWith({
-        where: { id: 'char-1' },
+        where: { id: 'char-1', deletedAt: null },
         data: { name: 'Nuevo nombre' },
       });
       expect(result.name).toBe('Nuevo nombre');
@@ -305,8 +305,21 @@ describe('CharactersService', () => {
         expect.objectContaining({ where: { id: mockCharacter.playbookId } }),
       );
       expect(prismaMock.character.update).toHaveBeenCalledWith({
-        where: { id: 'char-1' },
+        where: { id: 'char-1', deletedAt: null },
         data: { values: { moves: ['punch'] } },
+      });
+    });
+
+    it('throws NotFoundException when character is soft-deleted before the write', async () => {
+      prismaMock.character.findFirst.mockResolvedValue(mockCharacter);
+      prismaMock.character.update.mockRejectedValue({ code: 'P2025' });
+
+      await expect(
+        service.update('char-1', { name: 'Nuevo nombre' }),
+      ).rejects.toThrow(NotFoundException);
+      expect(prismaMock.character.update).toHaveBeenCalledWith({
+        where: { id: 'char-1', deletedAt: null },
+        data: { name: 'Nuevo nombre' },
       });
     });
 

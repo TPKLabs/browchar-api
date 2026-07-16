@@ -216,10 +216,23 @@ export class CharactersService {
       data.values = input.values as Prisma.InputJsonValue;
     }
 
-    const updated = await prisma.character.update({
-      where: { id },
-      data,
-    });
+    let updated: CharacterView;
+    try {
+      updated = await prisma.character.update({
+        where: { id, deletedAt: null },
+        data,
+      });
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException(`Character ${id} no encontrado`);
+      }
+      throw error;
+    }
 
     this.logger.log(`Character actualizado: ${updated.id}`);
     return updated;
