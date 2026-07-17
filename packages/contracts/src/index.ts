@@ -3,8 +3,11 @@
  * compartidos entre browchar-api y browchar-fe (DEV-153).
  */
 export * from './fields';
+export * from './pagination';
 export * from './character.schemas';
+export * from './character.responses';
 export * from './playbook.schemas';
+export * from './playbook.responses';
 export * from './template-schema';
 export * from './template.schemas';
 export * from './validation';

@@ -84,6 +84,15 @@ Characters request schemas (`createCharacterSchema`, `listCharactersQuerySchema`
 and `buildTemplateSchema(template)` — the Zod validator for a character's
 `values` against its Playbook template.
 
+**Every request and response type comes from this package** (DEV-197) — never
+define local mirror interfaces. Naming convention (mandatory):
+`<Entity><Operation>Response`, `<Entity><Operation>RequestBody`,
+`<Entity><Operation>RequestParams`, with operations List / Get / Create /
+Update / Delete (e.g. `CharacterUpdateRequestBody`, `CharacterListResponse`).
+Response types declare the **wire shape** (dates as ISO strings); the API keeps
+Prisma-derived types internally and `contracts.conformance.spec.ts` enforces
+key parity between both at compile time.
+
 - Import via the package name: `import { buildTemplateSchema } from '@tpklabs/browchar-contracts';`
 - `src/common/types/{fields,template}.types.ts` re-export from it for backward
   compatibility — new code should import from `@tpklabs/browchar-contracts` directly.
