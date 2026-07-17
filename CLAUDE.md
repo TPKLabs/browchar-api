@@ -175,8 +175,22 @@ npm run start:dev       # dev server with watch
 npm run lint            # ESLint, check only (fails on any warning — same as CI)
 npm run lint:fix        # ESLint with auto-fix
 npm run test            # unit tests
-npm run test:e2e        # e2e tests
+npm run test:e2e        # e2e tests (needs Docker — ver abajo)
 npx prisma generate     # regenerate Prisma client after schema changes
 npx prisma migrate dev  # create and apply a new migration
 npx tsx prisma/seed.ts  # seed the database
 ```
+
+## E2E tests (DEV-149)
+
+`npm run test:e2e` corre los specs `test/*.e2e-spec.ts` contra la API **real**,
+como caja negra por HTTP. **Requiere Docker corriendo.**
+
+El `globalSetup` (`test/e2e/global-setup.ts`) es self-contained: levanta un
+Postgres efímero con Testcontainers, corre `prisma generate` + `migrate deploy`,
+buildea la app y arranca `node dist/src/main.js` como proceso aparte; el
+`globalTeardown` para server y contenedor. Se corre la app compilada en node
+—no `Test.createTestingModule` dentro de jest— a propósito: el cliente Prisma 7
+(engine WASM) no inicializa bajo ts-jest. Los specs le pegan con `supertest` y
+montan sus fixtures con `pg` directo (SQL), sin cargar Prisma en el proceso de
+test. El primer run tarda (build + pull de la imagen postgres).
