@@ -53,6 +53,12 @@ jobs:
       - name: Build contracts package
         run: npm run contracts:build
 
+      # Suite propia del paquete compartido (incluye la auto-validación de
+      # los fixtures del contrato, DEV-202). El jest raíz no la cubre
+      # (rootDir: src), así que corre explícita.
+      - name: Test contracts package
+        run: npm test -w @tpklabs/browchar-contracts
+
       - name: Lint
         run: npm run lint
 

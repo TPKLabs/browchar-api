@@ -87,9 +87,13 @@ jobs:
             echo "::warning::browchar-fe/package.json pinea @tpklabs/browchar-contracts $PIN, que NO matchea la versión a publicar $VERSION. Abrí un PR en browchar-fe para actualizar el pin."
           fi
 
+      # Gate final antes de publicar: la suite del paquete (schemas + auto-
+      # validación de los fixtures del contrato, DEV-202).
+      - name: Test contracts package
+        if: steps.registry.outputs.published == 'false'
+        run: npm test -w @tpklabs/browchar-contracts
+
       # npm publish corre prepublishOnly (build del paquete) por su cuenta.
-      # Cuando packages/contracts tenga tests propios (DEV-202), agregar un
-      # step "npm test -w @tpklabs/browchar-contracts" antes de publicar.
       - name: Publish to GitHub Packages
         if: steps.registry.outputs.published == 'false'
         run: npm publish -w @tpklabs/browchar-contracts
