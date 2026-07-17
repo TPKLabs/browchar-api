@@ -175,8 +175,20 @@ npm run start:dev       # dev server with watch
 npm run lint            # ESLint, check only (fails on any warning — same as CI)
 npm run lint:fix        # ESLint with auto-fix
 npm run test            # unit tests
+npm run test:cov        # unit tests + coverage (aplica el umbral; igual que CI)
 npm run test:e2e        # e2e tests
 npx prisma generate     # regenerate Prisma client after schema changes
 npx prisma migrate dev  # create and apply a new migration
 npx tsx prisma/seed.ts  # seed the database
 ```
+
+## Coverage gate (DEV-150)
+
+`npm run test:cov` corre Jest con `--coverage` y aplica el `coverageThreshold`
+de `package.json`. La corrida (y el CI) **falla** si la cobertura global baja de
+**90% statements / 80% branches / 85% functions / 90% lines**.
+
+Se mide solo la lógica de negocio unitesteada. `collectCoverageFrom` excluye
+`main.ts` (bootstrap), `*.module.ts` (wiring DI), `*.controller.ts` (capa HTTP,
+cubierta por el e2e — DEV-149), `*.types.ts` y `config/env.ts`. Al mover código
+con lógica a esas ubicaciones, sumale su `.spec.ts` antes de bajar el umbral.
