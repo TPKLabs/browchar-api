@@ -20,7 +20,8 @@ export const createCharacterSchema = z.object({
   values: z.record(z.string(), z.unknown()).default(() => ({})),
 });
 
-export type CreateCharacterInput = z.infer<typeof createCharacterSchema>;
+/** Body de `POST /characters` (convención DEV-197). */
+export type CharacterCreateRequestBody = z.infer<typeof createCharacterSchema>;
 
 /**
  * PATCH /characters/:id (DEV-67). Todos los campos son opcionales (update
@@ -37,7 +38,8 @@ export const updateCharacterSchema = z
     message: 'Debe enviarse al menos un campo para actualizar',
   });
 
-export type UpdateCharacterInput = z.infer<typeof updateCharacterSchema>;
+/** Body de `PATCH /characters/:id` (convención DEV-197). */
+export type CharacterUpdateRequestBody = z.infer<typeof updateCharacterSchema>;
 
 export const listCharactersQuerySchema = z.object({
   playbookId: z.string().trim().min(1).optional(),
@@ -48,4 +50,7 @@ export const listCharactersQuerySchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).optional(),
 });
 
-export type ListCharactersQuery = z.infer<typeof listCharactersQuerySchema>;
+/** Query de `GET /characters` (convención DEV-197). */
+export type CharacterListRequestParams = z.infer<
+  typeof listCharactersQuerySchema
+>;

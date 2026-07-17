@@ -12,20 +12,21 @@ import type { Character } from '../../../prisma/generated/client';
 /** DEV-153: `ValidationError` vive en `@tpklabs/browchar-contracts` (contrato compartido). */
 export type { ValidationError } from '@tpklabs/browchar-contracts';
 
-/** Metadata de paginación del envelope estándar. */
-export interface PaginationMeta {
-  page: number;
-  pageSize: number;
-  total: number;
-}
+/**
+ * DEV-197: el envelope de paginación vive en `@tpklabs/browchar-contracts`
+ * (una sola definición FE/BE). Se re-exporta para los imports internos.
+ */
+export type { Paginated, PaginationMeta } from '@tpklabs/browchar-contracts';
 
-/** Envelope estándar `data`/`meta` para respuestas paginadas (convención REST). */
-export interface Paginated<T> {
-  data: T[];
-  meta: PaginationMeta;
-}
-
-/** Vista de Character expuesta por la API (fila cruda: `POST /characters`, `GET /characters/:id`). */
+/**
+ * Vista de Character expuesta por la API (fila cruda: `POST /characters`,
+ * `GET /characters/:id`).
+ *
+ * DEV-197: es la forma PRE-serialización (fechas `Date`, `values` JsonValue de
+ * Prisma). El contrato wire que consume el front es `CharacterGetResponse` en
+ * `@tpklabs/browchar-contracts` (fechas string ISO); la conformidad entre
+ * ambos la garantiza `contracts.conformance.spec.ts` en compile time.
+ */
 export type CharacterView = Character;
 
 /**

@@ -19,9 +19,9 @@ export {
   updateCharacterSchema,
 } from '@tpklabs/browchar-contracts';
 export type {
-  CreateCharacterInput,
-  ListCharactersQuery,
-  UpdateCharacterInput,
+  CharacterCreateRequestBody,
+  CharacterListRequestParams,
+  CharacterUpdateRequestBody,
 } from '@tpklabs/browchar-contracts';
 
 /**

@@ -12,9 +12,9 @@ import type {
   Paginated,
 } from '@/common/types/character.types';
 import type {
-  CreateCharacterInput,
-  ListCharactersQuery,
-  UpdateCharacterInput,
+  CharacterCreateRequestBody,
+  CharacterListRequestParams,
+  CharacterUpdateRequestBody,
 } from './character.schemas';
 import { DEFAULT_PAGE, DEFAULT_PAGE_SIZE } from '@/common/pagination';
 import { buildTemplateSchema } from '@tpklabs/browchar-contracts';
@@ -29,7 +29,7 @@ export class CharactersService {
    * con su `playbookVersion`. Sin auth todavía: `ownerId` llega en el body en
    * modo dev (DEV-5 lo moverá al token).
    */
-  async create(input: CreateCharacterInput): Promise<CharacterView> {
+  async create(input: CharacterCreateRequestBody): Promise<CharacterView> {
     // 1) El owner debe existir (modo dev: ownerId viene en el body).
     //    El DTO ya garantiza un ownerId no vacío cuando la request pasa por el
     //    pipe global de nestjs-zod; este chequeo sigue existiendo porque el
@@ -107,7 +107,7 @@ export class CharactersService {
    * muestra los primeros N como "personajes recientes"), no los últimos creados.
    */
   async findAll(
-    query: ListCharactersQuery,
+    query: CharacterListRequestParams,
   ): Promise<Paginated<CharacterListItem>> {
     const page = query.page && query.page > 0 ? query.page : DEFAULT_PAGE;
     const pageSize =
@@ -173,7 +173,7 @@ export class CharactersService {
    */
   async update(
     id: string,
-    input: UpdateCharacterInput,
+    input: CharacterUpdateRequestBody,
   ): Promise<CharacterView> {
     const character = await prisma.character.findFirst({
       where: { id, deletedAt: null },

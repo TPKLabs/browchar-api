@@ -10,4 +10,7 @@ export const listPlaybooksQuerySchema = z.object({
   gameId: z.string().trim().min(1).optional(),
 });
 
-export type ListPlaybooksQuery = z.infer<typeof listPlaybooksQuerySchema>;
+/** Query de `GET /playbooks` (convención DEV-197). */
+export type PlaybookListRequestParams = z.infer<
+  typeof listPlaybooksQuerySchema
+>;
