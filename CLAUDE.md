@@ -185,11 +185,15 @@ npx tsx prisma/seed.ts  # seed the database
 ## E2E tests (DEV-149)
 
 `npm run test:e2e` corre los specs `test/*.e2e-spec.ts` contra la API **real**,
-como caja negra por HTTP. **Requiere Docker corriendo.**
+como caja negra por HTTP. **Requiere Docker corriendo.** El script hace
+`prisma generate` + `build` **una sola vez** y después `test:e2e:run` (el jest).
+En CI el dist ya viene del step Build, así que el step e2e usa `test:e2e:run`
+directo (sin recompilar).
 
-El `globalSetup` (`test/e2e/global-setup.ts`) es self-contained: levanta un
-Postgres efímero con Testcontainers, corre `prisma generate` + `migrate deploy`,
-buildea la app y arranca `node dist/src/main.js` como proceso aparte; el
+El `globalSetup` (`test/e2e/global-setup.ts`) solo hace lo que depende del
+contenedor: levanta un Postgres efímero con Testcontainers, corre
+`migrate deploy` y arranca la app con **`npm run start:prod`** (el mismo comando
+desplegable, para que su rotura rompa el e2e) como proceso aparte; el
 `globalTeardown` para server y contenedor. Se corre la app compilada en node
 —no `Test.createTestingModule` dentro de jest— a propósito: el cliente Prisma 7
 (engine WASM) no inicializa bajo ts-jest. Los specs le pegan con `supertest` y

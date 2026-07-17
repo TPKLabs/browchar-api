@@ -44,7 +44,9 @@ const VALUES = { concept: 'Caballero valiente' };
 
 function expectIsoString(value: unknown): void {
   expect(typeof value).toBe('string');
-  expect(Number.isNaN(Date.parse(value as string))).toBe(false);
+  // Round-trip estricto: valida el contrato ISO 8601 exacto (Date.parse acepta
+  // formatos más laxos que no son el wire que serializa la API).
+  expect(new Date(value as string).toISOString()).toBe(value);
 }
 
 describe('Characters (e2e)', () => {

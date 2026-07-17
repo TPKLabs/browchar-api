@@ -1,4 +1,4 @@
-import { execSync, spawn, type ChildProcess } from 'node:child_process';
+import { execSync, type ChildProcess } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
 import net from 'node:net';
 import {
@@ -6,6 +6,7 @@ import {
   type StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
 import { mainBridgeFilePath, type E2eBridge } from './bridge';
+import { startServer, stopServer } from './server';
 
 /** Puerto libre efímero: evita colisiones con un puerto fijo o corridas paralelas. */
 async function getFreePort(): Promise<number> {
@@ -35,15 +36,17 @@ async function waitForServer(url: string, timeoutMs = 60000): Promise<void> {
 }
 
 /**
- * Prepara el entorno e2e y lo deja listo para los specs:
+ * Prepara el entorno e2e y lo deja listo para los specs. Solo hace lo que
+ * DEPENDE del contenedor: `prisma generate` y el build se corren una vez antes
+ * de jest (script `test:e2e`), no acá.
  *  1. Postgres efímero (Testcontainers) — `npm run test:e2e` es self-contained.
- *  2. `prisma generate` + `migrate deploy`: cliente fresco y schema aplicado.
- *  3. Build y arranque del server REAL como proceso aparte. Corremos la app de
- *     verdad por HTTP (black-box) en vez de instanciarla dentro de jest: así el
- *     cliente Prisma 7 (engine WASM) corre en node normal, no bajo ts-jest.
+ *  2. `migrate deploy`: aplica el schema al contenedor recién creado.
+ *  3. Arranca el server REAL con `npm run start:prod` (proceso aparte). Se corre
+ *     la app compilada por HTTP (black-box), no `Test.createTestingModule`,
+ *     porque el cliente Prisma 7 (engine WASM) no inicializa bajo ts-jest.
  *
- * Si cualquier paso falla, jest NO corre `globalTeardown`, así que limpiamos a
- * mano lo ya creado (contenedor y server) antes de propagar el error.
+ * Si algún paso falla, jest NO corre `globalTeardown`; limpiamos a mano lo ya
+ * creado (server y contenedor) sin tapar el error original y lo re-lanzamos.
  */
 export default async function globalSetup(): Promise<void> {
   let container: StartedPostgreSqlContainer | undefined;
@@ -52,27 +55,16 @@ export default async function globalSetup(): Promise<void> {
   try {
     container = await new PostgreSqlContainer('postgres:16').start();
     const databaseUrl = container.getConnectionUri();
-    const env = { ...process.env, DATABASE_URL: databaseUrl };
 
-    execSync('npx prisma generate', {
-      cwd: process.cwd(),
-      stdio: 'inherit',
-      env,
-    });
     execSync('npx prisma migrate deploy', {
       cwd: process.cwd(),
       stdio: 'inherit',
-      env,
+      env: { ...process.env, DATABASE_URL: databaseUrl },
     });
-    execSync('npm run build', { cwd: process.cwd(), stdio: 'inherit', env });
 
     const port = await getFreePort();
     const baseUrl = `http://127.0.0.1:${port}`;
-    server = spawn('node', ['dist/src/main.js'], {
-      cwd: process.cwd(),
-      stdio: 'inherit',
-      env: { ...env, PORT: String(port), NODE_ENV: 'test' },
-    });
+    server = startServer(port, databaseUrl);
     await waitForServer(`${baseUrl}/`);
 
     const bridge: E2eBridge = { baseUrl, databaseUrl };
@@ -91,8 +83,12 @@ export default async function globalSetup(): Promise<void> {
     store.__E2E_SERVER__ = server;
     store.__E2E_BRIDGE_FILE__ = bridgeFile;
   } catch (error) {
-    server?.kill();
-    await container?.stop();
+    // allSettled: que fallar al parar uno no impida parar el otro; y throw del
+    // error ORIGINAL, no del de cleanup.
+    await Promise.allSettled([
+      stopServer(server),
+      container?.stop() ?? Promise.resolve(),
+    ]);
     throw error;
   }
 }

@@ -78,6 +78,7 @@ jobs:
 
       # e2e black-box (DEV-149): el globalSetup levanta Postgres con
       # Testcontainers (Docker está disponible en ubuntu-latest), migra y
-      # arranca la app real. Se corre después del build.
+      # arranca la app real (npm run start:prod). Usa test:e2e:run —sin build—
+      # para reusar el dist del step Build de arriba (no recompilar dos veces).
       - name: E2E tests
-        run: npm run test:e2e
+        run: npm run test:e2e:run
