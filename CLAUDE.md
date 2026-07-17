@@ -175,7 +175,8 @@ npm run start:dev       # dev server with watch
 npm run lint            # ESLint, check only (fails on any warning — same as CI)
 npm run lint:fix        # ESLint with auto-fix
 npm run test            # unit tests
-npm run test:e2e        # e2e tests (needs Docker — ver abajo)
+npm run test:cov        # unit tests + coverage (aplica el umbral; igual que CI)
+npm run test:e2e        # e2e tests
 npx prisma generate     # regenerate Prisma client after schema changes
 npx prisma migrate dev  # create and apply a new migration
 npx tsx prisma/seed.ts  # seed the database
@@ -194,3 +195,22 @@ buildea la app y arranca `node dist/src/main.js` como proceso aparte; el
 (engine WASM) no inicializa bajo ts-jest. Los specs le pegan con `supertest` y
 montan sus fixtures con `pg` directo (SQL), sin cargar Prisma en el proceso de
 test. El primer run tarda (build + pull de la imagen postgres).
+
+## Coverage gate (DEV-150)
+
+`npm run test:cov` corre Jest con `--coverage` y aplica el `coverageThreshold`
+de `package.json`. La corrida (y el CI) **falla** si la cobertura global baja de
+**90% statements / 80% branches / 85% functions / 90% lines**.
+
+Se mide sobre la lógica de negocio (services, schemas, controllers, utils),
+cada una con su `.spec.ts`. `collectCoverageFrom` excluye solo lo que no tiene
+lógica propia: `main.ts` (bootstrap), `*.module.ts` (wiring DI), `*.types.ts` y
+`config/env.ts`. Los controllers **sí** se cuentan (tienen unit tests de
+delegación) — no dependas del e2e para cubrirlos: hoy no corre en CI. Al agregar
+un archivo con lógica, sumale su `.spec.ts` antes de tocar el umbral.
+
+El paquete `packages/contracts` (fuente de verdad compartida) tiene su **propio**
+gate: el jest raíz no lo cubre (`rootDir: src`), así que corre aparte con
+`npm run test:cov -w @tpklabs/browchar-contracts` y su `jest.config.cjs` aplica
+90/78/88/90 sobre los schemas (excluye el barrel `index.ts` y `pagination.ts`,
+que es solo constantes + tipos). El CI lo corre en el step "Test contracts package".

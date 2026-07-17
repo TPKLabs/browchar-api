@@ -57,9 +57,10 @@ jobs:
 
       # Suite propia del paquete compartido (incluye la auto-validación de
       # los fixtures del contrato, DEV-202). El jest raíz no la cubre
-      # (rootDir: src), así que corre explícita.
+      # (rootDir: src), así que corre explícita. test:cov aplica su propio
+      # coverageThreshold (DEV-150) — el paquete es fuente de verdad compartida.
       - name: Test contracts package
-        run: npm test -w @tpklabs/browchar-contracts
+        run: npm run test:cov -w @tpklabs/browchar-contracts
 
       - name: Lint
         run: npm run lint
@@ -67,8 +68,10 @@ jobs:
       - name: Validate seed data
         run: npm run validate:data
 
+      # --coverage aplica el coverageThreshold de package.json (DEV-150): la
+      # corrida falla si la cobertura baja del umbral acordado.
       - name: Test
-        run: npm run test
+        run: npm run test:cov
 
       - name: Build
         run: npm run build

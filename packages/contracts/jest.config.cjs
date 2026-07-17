@@ -8,4 +8,22 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
+  // Coverage sobre el código con lógica (schemas + fixtures). Se excluye el
+  // barrel index.ts y pagination.ts (solo constantes + interfaces, sin
+  // comportamiento). Los *.responses.ts y validation.ts son type-only: no
+  // generan filas de coverage. El umbral solo corta con --coverage (test:cov).
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.spec.ts',
+    '!src/index.ts',
+    '!src/pagination.ts',
+  ],
+  coverageThreshold: {
+    global: {
+      statements: 90,
+      branches: 78,
+      functions: 88,
+      lines: 90,
+    },
+  },
 };
