@@ -1,13 +1,24 @@
 import { execSync, spawn, type ChildProcess } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
+import net from 'node:net';
 import {
   PostgreSqlContainer,
   type StartedPostgreSqlContainer,
 } from '@testcontainers/postgresql';
-import { BRIDGE_FILE, type E2eBridge } from './bridge';
+import { mainBridgeFilePath, type E2eBridge } from './bridge';
 
-const PORT = 3999;
-const BASE_URL = `http://127.0.0.1:${PORT}`;
+/** Puerto libre efímero: evita colisiones con un puerto fijo o corridas paralelas. */
+async function getFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.on('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const address = srv.address();
+      const port = typeof address === 'object' && address ? address.port : 0;
+      srv.close(() => resolve(port));
+    });
+  });
+}
 
 async function waitForServer(url: string, timeoutMs = 60000): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -30,40 +41,58 @@ async function waitForServer(url: string, timeoutMs = 60000): Promise<void> {
  *  3. Build y arranque del server REAL como proceso aparte. Corremos la app de
  *     verdad por HTTP (black-box) en vez de instanciarla dentro de jest: así el
  *     cliente Prisma 7 (engine WASM) corre en node normal, no bajo ts-jest.
+ *
+ * Si cualquier paso falla, jest NO corre `globalTeardown`, así que limpiamos a
+ * mano lo ya creado (contenedor y server) antes de propagar el error.
  */
 export default async function globalSetup(): Promise<void> {
-  const container = await new PostgreSqlContainer('postgres:16').start();
-  const databaseUrl = container.getConnectionUri();
-  const env = { ...process.env, DATABASE_URL: databaseUrl };
+  let container: StartedPostgreSqlContainer | undefined;
+  let server: ChildProcess | undefined;
 
-  execSync('npx prisma generate', {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-    env,
-  });
-  execSync('npx prisma migrate deploy', {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-    env,
-  });
-  execSync('npm run build', { cwd: process.cwd(), stdio: 'inherit', env });
+  try {
+    container = await new PostgreSqlContainer('postgres:16').start();
+    const databaseUrl = container.getConnectionUri();
+    const env = { ...process.env, DATABASE_URL: databaseUrl };
 
-  const server = spawn('node', ['dist/src/main.js'], {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-    env: { ...env, PORT: String(PORT), NODE_ENV: 'test' },
-  });
-  await waitForServer(`${BASE_URL}/`);
+    execSync('npx prisma generate', {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+      env,
+    });
+    execSync('npx prisma migrate deploy', {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+      env,
+    });
+    execSync('npm run build', { cwd: process.cwd(), stdio: 'inherit', env });
 
-  const bridge: E2eBridge = { baseUrl: BASE_URL, databaseUrl };
-  writeFileSync(BRIDGE_FILE, JSON.stringify(bridge));
+    const port = await getFreePort();
+    const baseUrl = `http://127.0.0.1:${port}`;
+    server = spawn('node', ['dist/src/main.js'], {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+      env: { ...env, PORT: String(port), NODE_ENV: 'test' },
+    });
+    await waitForServer(`${baseUrl}/`);
 
-  // Guardamos contenedor y server en globalThis para pararlos en el teardown
-  // (jest corre globalSetup y globalTeardown en el mismo proceso).
-  const store = globalThis as {
-    __PG_CONTAINER__?: StartedPostgreSqlContainer;
-    __E2E_SERVER__?: ChildProcess;
-  };
-  store.__PG_CONTAINER__ = container;
-  store.__E2E_SERVER__ = server;
+    const bridge: E2eBridge = { baseUrl, databaseUrl };
+    const bridgeFile = mainBridgeFilePath();
+    process.env.E2E_BRIDGE_FILE = bridgeFile;
+    writeFileSync(bridgeFile, JSON.stringify(bridge));
+
+    // Guardamos contenedor, server y archivo para el teardown (jest corre
+    // globalSetup y globalTeardown en el mismo proceso).
+    const store = globalThis as {
+      __PG_CONTAINER__?: StartedPostgreSqlContainer;
+      __E2E_SERVER__?: ChildProcess;
+      __E2E_BRIDGE_FILE__?: string;
+    };
+    store.__PG_CONTAINER__ = container;
+    store.__E2E_SERVER__ = server;
+    store.__E2E_BRIDGE_FILE__ = bridgeFile;
+  } catch (error) {
+    server?.kill();
+    await container?.stop();
+    throw error;
+  }
 }

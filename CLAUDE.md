@@ -4,7 +4,7 @@ REST API for managing tabletop RPG character sheets. Built with NestJS, Prisma, 
 
 ## Stack
 
-- **Runtime**: Node.js 20+
+- **Runtime**: Node.js >=22.19 (ver `.nvmrc` / `engines`; el e2e con Testcontainers lo exige)
 - **Framework**: NestJS 11
 - **ORM**: Prisma 7 (adapter: `@prisma/adapter-pg`)
 - **Database**: PostgreSQL

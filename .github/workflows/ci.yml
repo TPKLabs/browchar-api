@@ -34,9 +34,9 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          # 22 (LTS): el e2e usa Testcontainers, cuyo undici requiere Node >=22
-          # (markAsUncloneable). Dev también corre en 22; el proyecto es "20+".
-          node-version: 22
+          # Fuente única del requisito de Node: .nvmrc (>=22.19, exigido por el
+          # undici de Testcontainers en el e2e — ver engines en package.json).
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
