@@ -14,6 +14,7 @@ a known issue or a future consideration in a commit message.
 
 ### Fixed
 
+- **deps:** align contracts pin with the 0.4.0 bump
 - **characters:** drop duplicated character_name/playbook_name fields
 - **seed:** render empty Moves sections and fix invalid field types
 - **config:** enable CORS for the frontend dev origin

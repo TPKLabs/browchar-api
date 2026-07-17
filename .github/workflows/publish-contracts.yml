@@ -8,6 +8,11 @@ on:
     branches: [main]
     paths:
       - 'packages/contracts/**'
+  # Relanzamiento manual: si el publish falla por algo ajeno al paquete (p.ej.
+  # un pin desactualizado que se corrige en un commit que no toca
+  # packages/contracts/**), el paths-filter no re-dispara — este trigger
+  # permite publicar sin commits artificiales. Idempotente por diseño.
+  workflow_dispatch:
 
 permissions:
   contents: read
