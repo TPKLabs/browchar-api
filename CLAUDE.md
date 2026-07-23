@@ -4,7 +4,7 @@ REST API for managing tabletop RPG character sheets. Built with NestJS, Prisma, 
 
 ## Stack
 
-- **Runtime**: Node.js 20+
+- **Runtime**: Node.js >=22.19 (ver `.nvmrc` / `engines`; el e2e con Testcontainers lo exige)
 - **Framework**: NestJS 11
 - **ORM**: Prisma 7 (adapter: `@prisma/adapter-pg`)
 - **Database**: PostgreSQL
@@ -182,6 +182,33 @@ npx prisma migrate dev  # create and apply a new migration
 npx tsx prisma/seed.ts  # seed the database
 ```
 
+## E2E tests (DEV-149)
+
+`npm run test:e2e` corre los specs `test/*.e2e-spec.ts` contra la API **real**,
+como caja negra por HTTP. **Requiere Docker corriendo.** El script encadena
+`prisma generate` + `build` **una sola vez** y después `test:e2e:run` (el jest) —
+así ni una corrida local ni el job de CI recompilan dos veces.
+
+El `globalSetup` (`test/e2e/global-setup.ts`) solo hace lo que depende del
+contenedor: levanta un Postgres efímero con Testcontainers (imagen **pinneada
+por digest**, no por tag — reproducible byte a byte; actualizar el digest a
+mano al subir de versión), corre `migrate deploy` y arranca la app con
+**`npm run start:prod`** (el mismo comando desplegable, para que su rotura
+rompa el e2e) como proceso aparte; el `globalTeardown` para server y
+contenedor, esperando su salida real (no solo `kill`). Se corre la app
+compilada en node —no `Test.createTestingModule` dentro de jest— a propósito:
+el cliente Prisma 7 (engine WASM) no inicializa bajo ts-jest. Los specs le
+pegan con `supertest` y montan sus fixtures con `pg` directo (SQL), sin cargar
+Prisma en el proceso de test. El primer run tarda (build + pull de la imagen
+postgres).
+
+**CI**: `e2e` es un job aparte de `checks` (lint/unit/build) — corren en
+paralelo, sin compartir build entre sí (cada uno se compila una vez, adentro
+suyo), así el e2e no demora el feedback rápido de lint/unit. Si el e2e falla,
+sube como artefacto (`e2e-artifacts`, 7 días) el JUnit (`test-results/e2e-junit.xml`)
+y los logs de server/Postgres (`test-results/e2e-*.log`) — no hace falta
+reproducir localmente para ver qué pasó.
+
 ## Coverage gate (DEV-150)
 
 `npm run test:cov` corre Jest con `--coverage` y aplica el `coverageThreshold`
@@ -192,8 +219,9 @@ Se mide sobre la lógica de negocio (services, schemas, controllers, utils),
 cada una con su `.spec.ts`. `collectCoverageFrom` excluye solo lo que no tiene
 lógica propia: `main.ts` (bootstrap), `*.module.ts` (wiring DI), `*.types.ts` y
 `config/env.ts`. Los controllers **sí** se cuentan (tienen unit tests de
-delegación) — no dependas del e2e para cubrirlos: hoy no corre en CI. Al agregar
-un archivo con lógica, sumale su `.spec.ts` antes de tocar el umbral.
+delegación) — no dependas del e2e (DEV-149) para cubrirlos: corre con su propia
+config de Jest, sin `--coverage`, así que no aporta al reporte de este gate. Al
+agregar un archivo con lógica, sumale su `.spec.ts` antes de tocar el umbral.
 
 El paquete `packages/contracts` (fuente de verdad compartida) tiene su **propio**
 gate: el jest raíz no lo cubre (`rootDir: src`), así que corre aparte con

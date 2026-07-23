@@ -8,7 +8,7 @@ Backend para gestionar hojas de personaje multi-sistema (PBTA, D&D, Vampiro, etc
 
 ## Requisitos
 
-- Node.js 18+ (recomendado 20+)
+- Node.js >=22.19 (ver `.nvmrc`; lo exige el e2e con Testcontainers)
 - Docker + Docker Compose
 - Git
 

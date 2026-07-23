@@ -17,7 +17,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  ci:
+  # Lint + unit + build: no necesita Docker, corre rápido. Aparte del job e2e
+  # (DEV-149) para que ambos corran en paralelo y una falla lenta del e2e no
+  # bloquee el feedback rápido de lint/tests.
+  checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -34,7 +37,9 @@ jobs:
 
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 20
+          # Fuente única del requisito de Node: .nvmrc (>=22.19, exigido por el
+          # undici de Testcontainers en el job e2e — ver engines en package.json).
+          node-version-file: .nvmrc
           cache: npm
 
       - name: Install dependencies
@@ -73,3 +78,39 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # e2e black-box (DEV-149): globalSetup levanta Postgres con Testcontainers
+  # (Docker está disponible en ubuntu-latest), migra y arranca la app real
+  # (npm run start:prod). Job aparte de `checks`: es el más lento (build +
+  # contenedor) y no debería demorar el feedback de lint/unit.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # test:e2e encadena prisma generate + build + test:e2e:run (una sola
+      # compilación); no depende del job `checks`, así ambos jobs corren en
+      # paralelo sin pasarse artefactos entre sí.
+      - name: E2E tests
+        run: npm run test:e2e
+
+      # Si el e2e falla, subir junit + logs del server/Postgres para
+      # diagnosticar sin tener que reproducir localmente.
+      - name: Upload E2E artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: e2e-artifacts
+          path: test-results/
+          retention-days: 7

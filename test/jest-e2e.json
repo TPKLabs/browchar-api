@@ -1,9 +1,25 @@
 {
   "moduleFileExtensions": ["js", "json", "ts"],
-  "rootDir": ".",
+  "rootDir": "..",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
-  }
+  },
+  "moduleNameMapper": {
+    "^@tpklabs/browchar-contracts$": "<rootDir>/packages/contracts/src/index.ts"
+  },
+  "globalSetup": "<rootDir>/test/e2e/global-setup.ts",
+  "globalTeardown": "<rootDir>/test/e2e/global-teardown.ts",
+  "testTimeout": 30000,
+  "reporters": [
+    "default",
+    [
+      "jest-junit",
+      {
+        "outputDirectory": "test-results",
+        "outputName": "e2e-junit.xml"
+      }
+    ]
+  ]
 }
