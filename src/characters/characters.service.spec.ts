@@ -19,6 +19,7 @@ jest.mock('@db', () => ({
       findFirst: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
   },
 }));
@@ -34,6 +35,7 @@ const prismaMock = prisma as unknown as {
     findFirst: AsyncMock;
     count: AsyncMock;
     update: AsyncMock;
+    updateMany: AsyncMock;
   };
 };
 
@@ -354,52 +356,32 @@ describe('CharactersService', () => {
   });
 
   describe('remove', () => {
-    it('throws NotFoundException when character does not exist', async () => {
-      prismaMock.character.findFirst.mockResolvedValue(null);
+    it('throws NotFoundException when no active character is updated', async () => {
+      prismaMock.character.updateMany.mockResolvedValue({ count: 0 });
 
       await expect(service.remove('missing')).rejects.toThrow(
         NotFoundException,
       );
-      expect(prismaMock.character.update).not.toHaveBeenCalled();
-    });
-
-    it('throws NotFoundException when character is already soft-deleted', async () => {
-      prismaMock.character.findFirst.mockResolvedValue(null);
-
-      await expect(service.remove('char-1')).rejects.toThrow(NotFoundException);
-      expect(prismaMock.character.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ id: 'char-1', deletedAt: null }),
-        }),
-      );
+      expect(prismaMock.character.updateMany).toHaveBeenCalledWith({
+        where: { id: 'missing', deletedAt: null },
+        data: { deletedAt: expect.any(Date) },
+      });
     });
 
     it('soft-deletes by setting deletedAt instead of removing the row', async () => {
-      prismaMock.character.findFirst.mockResolvedValue(mockCharacter);
-      prismaMock.character.update.mockResolvedValue({
-        ...mockCharacter,
-        deletedAt: new Date(),
-      });
+      prismaMock.character.updateMany.mockResolvedValue({ count: 1 });
 
       await service.remove('char-1');
 
-      expect(prismaMock.character.update).toHaveBeenCalledWith({
+      expect(prismaMock.character.updateMany).toHaveBeenCalledWith({
         where: { id: 'char-1', deletedAt: null },
         data: { deletedAt: expect.any(Date) },
       });
     });
 
-    it('throws NotFoundException when the character is soft-deleted before the write', async () => {
-      prismaMock.character.findFirst.mockResolvedValue(mockCharacter);
-      prismaMock.character.update.mockRejectedValue({ code: 'P2025' });
-
-      await expect(service.remove('char-1')).rejects.toThrow(NotFoundException);
-    });
-
-    it('rethrows unexpected errors from the update', async () => {
-      prismaMock.character.findFirst.mockResolvedValue(mockCharacter);
+    it('rethrows unexpected errors from the atomic update', async () => {
       const unexpected = new Error('connection lost');
-      prismaMock.character.update.mockRejectedValue(unexpected);
+      prismaMock.character.updateMany.mockRejectedValue(unexpected);
 
       await expect(service.remove('char-1')).rejects.toThrow(unexpected);
     });

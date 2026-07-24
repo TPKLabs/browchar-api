@@ -1,6 +1,6 @@
 {
   "name": "@tpklabs/browchar-contracts",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Contratos compartidos FE/BE de browchar: schemas Zod y tipos de dominio. Fuente de verdad única (DEV-153).",
   "license": "UNLICENSED",
   "type": "commonjs",

@@ -64,3 +64,4 @@ export type CharacterUpdateResponse = Character;
 export interface CharacterDeleteRequestParams {
   id: string;
 }
+export type CharacterDeleteResponse = void;

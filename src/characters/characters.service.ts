@@ -242,34 +242,19 @@ export class CharactersService {
    * DELETE /characters/:id — borrado lógico: marca `deletedAt` en vez de
    * borrar la fila (mismo criterio que ya respetan `findAll`/`findOne`/
    * `update` con `deletedAt: null`), así el personaje deja de listarse/verse
-   * sin perder el registro. 404 si no existe o ya está borrado. Las
-   * validaciones de ownership se completan en DEV-64/DEV-73, igual que en
+   * sin perder el registro. El update condicional hace atómica la transición:
+   * si no existe o ya estaba borrado, ninguna fila cambia y respondemos 404.
+   * Las validaciones de ownership se completan en DEV-64/DEV-73, igual que en
    * `findOne`/`update` — todavía no hay auth de la cual derivar la usuaria
    * actual.
    */
   async remove(id: string): Promise<void> {
-    const character = await prisma.character.findFirst({
+    const { count } = await prisma.character.updateMany({
       where: { id, deletedAt: null },
+      data: { deletedAt: new Date() },
     });
-    if (!character) {
+    if (count === 0) {
       throw new NotFoundException(`Character ${id} no encontrado`);
-    }
-
-    try {
-      await prisma.character.update({
-        where: { id, deletedAt: null },
-        data: { deletedAt: new Date() },
-      });
-    } catch (error) {
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'code' in error &&
-        error.code === 'P2025'
-      ) {
-        throw new NotFoundException(`Character ${id} no encontrado`);
-      }
-      throw error;
     }
 
     this.logger.log(`Character eliminado: ${id}`);
