@@ -1,7 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   Post,
@@ -44,5 +47,11 @@ export class CharactersController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() body: UpdateCharacterDto) {
     return this.charactersService.update(id, body);
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id') id: string) {
+    return this.charactersService.remove(id);
   }
 }

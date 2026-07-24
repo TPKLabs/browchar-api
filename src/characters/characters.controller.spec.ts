@@ -21,6 +21,7 @@ describe('CharactersController', () => {
   const findOne = jest.fn<(id: string) => Promise<unknown>>();
   const update =
     jest.fn<(id: string, body: UpdateCharacterDto) => Promise<unknown>>();
+  const remove = jest.fn<(id: string) => Promise<unknown>>();
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
@@ -28,7 +29,7 @@ describe('CharactersController', () => {
       providers: [
         {
           provide: CharactersService,
-          useValue: { create, findAll, findOne, update },
+          useValue: { create, findAll, findOne, update, remove },
         },
       ],
     }).compile();
@@ -74,5 +75,12 @@ describe('CharactersController', () => {
 
     await expect(controller.update('char-1', body)).resolves.toEqual(updated);
     expect(update).toHaveBeenCalledWith('char-1', body);
+  });
+
+  it('delegates remove to the service', async () => {
+    remove.mockResolvedValue(undefined);
+
+    await expect(controller.remove('char-1')).resolves.toBeUndefined();
+    expect(remove).toHaveBeenCalledWith('char-1');
   });
 });

@@ -186,4 +186,45 @@ describe('Characters (e2e)', () => {
   it('devuelve 404 al pedir un personaje inexistente', async () => {
     await api().get('/characters/nonexistent-id').expect(404);
   });
+
+  it('elimina un personaje (soft-delete): 204, deja de listarse y de verse', async () => {
+    const createRes = await api()
+      .post('/characters')
+      .send({ name: 'Para borrar', playbookId, ownerId, values: VALUES })
+      .expect(201);
+    const created = createRes.body as Character;
+
+    const deleteRes = await api()
+      .delete(`/characters/${created.id}`)
+      .expect(204);
+    expect(deleteRes.text).toBe('');
+
+    await api().get(`/characters/${created.id}`).expect(404);
+
+    const listRes = await api().get('/characters').expect(200);
+    const list = listRes.body as CharacterListResponse;
+    expect(list.data.find((c) => c.id === created.id)).toBeUndefined();
+
+    const persisted = await db.query<{ deletedAt: Date | null }>(
+      'SELECT "deletedAt" FROM "Character" WHERE id = $1',
+      [created.id],
+    );
+    expect(persisted.rowCount).toBe(1);
+    expect(persisted.rows[0]?.deletedAt).toBeInstanceOf(Date);
+  });
+
+  it('devuelve 404 al eliminar un personaje inexistente', async () => {
+    await api().delete('/characters/nonexistent-id').expect(404);
+  });
+
+  it('devuelve 404 al eliminar dos veces el mismo personaje', async () => {
+    const createRes = await api()
+      .post('/characters')
+      .send({ name: 'Doble borrado', playbookId, ownerId, values: VALUES })
+      .expect(201);
+    const created = createRes.body as Character;
+
+    await api().delete(`/characters/${created.id}`).expect(204);
+    await api().delete(`/characters/${created.id}`).expect(404);
+  });
 });
