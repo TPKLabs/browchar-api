@@ -352,4 +352,56 @@ describe('CharactersService', () => {
       expect(prismaMock.character.update).not.toHaveBeenCalled();
     });
   });
+
+  describe('remove', () => {
+    it('throws NotFoundException when character does not exist', async () => {
+      prismaMock.character.findFirst.mockResolvedValue(null);
+
+      await expect(service.remove('missing')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prismaMock.character.update).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when character is already soft-deleted', async () => {
+      prismaMock.character.findFirst.mockResolvedValue(null);
+
+      await expect(service.remove('char-1')).rejects.toThrow(NotFoundException);
+      expect(prismaMock.character.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ id: 'char-1', deletedAt: null }),
+        }),
+      );
+    });
+
+    it('soft-deletes by setting deletedAt instead of removing the row', async () => {
+      prismaMock.character.findFirst.mockResolvedValue(mockCharacter);
+      prismaMock.character.update.mockResolvedValue({
+        ...mockCharacter,
+        deletedAt: new Date(),
+      });
+
+      await service.remove('char-1');
+
+      expect(prismaMock.character.update).toHaveBeenCalledWith({
+        where: { id: 'char-1', deletedAt: null },
+        data: { deletedAt: expect.any(Date) },
+      });
+    });
+
+    it('throws NotFoundException when the character is soft-deleted before the write', async () => {
+      prismaMock.character.findFirst.mockResolvedValue(mockCharacter);
+      prismaMock.character.update.mockRejectedValue({ code: 'P2025' });
+
+      await expect(service.remove('char-1')).rejects.toThrow(NotFoundException);
+    });
+
+    it('rethrows unexpected errors from the update', async () => {
+      prismaMock.character.findFirst.mockResolvedValue(mockCharacter);
+      const unexpected = new Error('connection lost');
+      prismaMock.character.update.mockRejectedValue(unexpected);
+
+      await expect(service.remove('char-1')).rejects.toThrow(unexpected);
+    });
+  });
 });

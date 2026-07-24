@@ -59,3 +59,8 @@ export interface CharacterUpdateRequestParams {
   id: string;
 }
 export type CharacterUpdateResponse = Character;
+
+/** `DELETE /characters/:id` — sin body de response (204 No Content). */
+export interface CharacterDeleteRequestParams {
+  id: string;
+}
