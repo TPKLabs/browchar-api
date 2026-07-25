@@ -19,6 +19,7 @@ jest.mock('@db', () => ({
       findFirst: jest.fn(),
       count: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
     },
   },
 }));
@@ -34,6 +35,7 @@ const prismaMock = prisma as unknown as {
     findFirst: AsyncMock;
     count: AsyncMock;
     update: AsyncMock;
+    updateMany: AsyncMock;
   };
 };
 
@@ -350,6 +352,38 @@ describe('CharactersService', () => {
         service.update('char-1', { values: { moves: [] } }),
       ).rejects.toThrow(NotFoundException);
       expect(prismaMock.character.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('remove', () => {
+    it('throws NotFoundException when no active character is updated', async () => {
+      prismaMock.character.updateMany.mockResolvedValue({ count: 0 });
+
+      await expect(service.remove('missing')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(prismaMock.character.updateMany).toHaveBeenCalledWith({
+        where: { id: 'missing', deletedAt: null },
+        data: { deletedAt: expect.any(Date) },
+      });
+    });
+
+    it('soft-deletes by setting deletedAt instead of removing the row', async () => {
+      prismaMock.character.updateMany.mockResolvedValue({ count: 1 });
+
+      await service.remove('char-1');
+
+      expect(prismaMock.character.updateMany).toHaveBeenCalledWith({
+        where: { id: 'char-1', deletedAt: null },
+        data: { deletedAt: expect.any(Date) },
+      });
+    });
+
+    it('rethrows unexpected errors from the atomic update', async () => {
+      const unexpected = new Error('connection lost');
+      prismaMock.character.updateMany.mockRejectedValue(unexpected);
+
+      await expect(service.remove('char-1')).rejects.toThrow(unexpected);
     });
   });
 });
