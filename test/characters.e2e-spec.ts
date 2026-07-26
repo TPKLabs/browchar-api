@@ -4,6 +4,7 @@ import request from 'supertest';
 import { Client } from 'pg';
 import {
   FieldType,
+  type ApiErrorResponse,
   type Character,
   type CharacterListResponse,
 } from '@tpklabs/browchar-contracts';
@@ -170,21 +171,33 @@ describe('Characters (e2e)', () => {
   });
 
   it('rechaza con 400 los values inválidos para el template del Playbook', async () => {
-    await api()
+    // Envelope de error estándar (DEV-120): validación de dominio → details.
+    const res = await api()
       .post('/characters')
       .send({ name: 'Sin concepto', playbookId, ownerId, values: {} })
       .expect(400);
+    const err = res.body as ApiErrorResponse;
+    expect(err.statusCode).toBe(400);
+    expect(err.error.code).toBe('VALIDATION_ERROR');
+    expect(err.error.details?.length).toBeGreaterThan(0);
   });
 
   it('rechaza con 400 un body que no cumple el schema (name vacío)', async () => {
-    await api()
+    // Validación Zod (nestjs-zod) mapeada al mismo envelope, con details por campo.
+    const res = await api()
       .post('/characters')
       .send({ name: '', playbookId, ownerId, values: VALUES })
       .expect(400);
+    const err = res.body as ApiErrorResponse;
+    expect(err.error.code).toBe('VALIDATION_ERROR');
+    expect(err.error.details?.some((d) => d.field === 'name')).toBe(true);
   });
 
   it('devuelve 404 al pedir un personaje inexistente', async () => {
-    await api().get('/characters/nonexistent-id').expect(404);
+    const res = await api().get('/characters/nonexistent-id').expect(404);
+    const err = res.body as ApiErrorResponse;
+    expect(err.statusCode).toBe(404);
+    expect(err.error.code).toBe('NOT_FOUND');
   });
 
   it('elimina un personaje (soft-delete): 204, deja de listarse y de verse', async () => {
