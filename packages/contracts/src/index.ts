@@ -4,6 +4,8 @@
  */
 export * from './fields';
 export * from './pagination';
+export * from './auth.schemas';
+export * from './auth.responses';
 export * from './character.schemas';
 export * from './character.responses';
 export * from './error.responses';

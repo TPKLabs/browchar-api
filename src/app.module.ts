@@ -7,9 +7,10 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { PlaybooksModule } from './playbooks/playbooks.module';
 import { CharactersModule } from './characters/characters.module';
 import { GamesModule } from './games/games.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [PlaybooksModule, CharactersModule, GamesModule],
+  imports: [PlaybooksModule, CharactersModule, GamesModule, AuthModule],
   controllers: [AppController],
   providers: [
     AppService,

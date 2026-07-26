@@ -1,8 +1,10 @@
 import type {
+  AuthUser as WireAuthUser,
   Character as WireCharacter,
   CharacterListItem as WireCharacterListItem,
   PlaybookView as WirePlaybookView,
 } from '@tpklabs/browchar-contracts';
+import type { AuthUserView } from './auth.types';
 import type { CharacterListItem, CharacterView } from './character.types';
 import type { PlaybookView } from './playbook.types';
 
@@ -31,13 +33,18 @@ const characterKeysMatch: KeysMatch<CharacterView, WireCharacter> = true;
 const listItemKeysMatch: KeysMatch<CharacterListItem, WireCharacterListItem> =
   true;
 const playbookViewKeysMatch: KeysMatch<PlaybookView, WirePlaybookView> = true;
+// Auth (DEV-84): acá la paridad de claves además cumple una función de
+// seguridad — si `passwordHash` se colara en cualquiera de los dos lados, esta
+// línea deja de compilar.
+const authUserKeysMatch: KeysMatch<AuthUserView, WireAuthUser> = true;
 
 describe('conformidad contrato wire <-> tipos internos (DEV-197)', () => {
-  it('las claves de Character, CharacterListItem y PlaybookView coinciden con el contrato', () => {
+  it('las claves de Character, CharacterListItem, PlaybookView y AuthUser coinciden con el contrato', () => {
     // El trabajo real lo hace el typechecker arriba; esto solo evita que jest
     // marque el archivo como suite vacía.
     expect(characterKeysMatch).toBe(true);
     expect(listItemKeysMatch).toBe(true);
     expect(playbookViewKeysMatch).toBe(true);
+    expect(authUserKeysMatch).toBe(true);
   });
 });
