@@ -6,6 +6,7 @@ export * from './fields';
 export * from './pagination';
 export * from './character.schemas';
 export * from './character.responses';
+export * from './error.responses';
 export * from './playbook.schemas';
 export * from './playbook.responses';
 export * from './template-schema';
