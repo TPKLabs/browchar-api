@@ -130,8 +130,16 @@ Never access `process.env` directly. Always go through `src/config/env.ts`:
 
 ```ts
 import { env } from '@/config/env';
-// env.PORT, env.DATABASE_URL, env.NODE_ENV
+// env.NODE_ENV, env.PORT, env.DATABASE_URL, env.CORS_ORIGIN,
+// env.JWT_SECRET, env.JWT_EXPIRES_IN
 ```
+
+`env.ts` **valida al importarse**, así que una configuración inválida rompe el
+arranque y no la primera request. `JWT_SECRET` es requerido (mínimo 32
+caracteres) y `JWT_EXPIRES_IN` está acotado a `1m`–`90d`. `.env.example` trae
+`JWT_SECRET=` vacío a propósito: un placeholder que pasara la validación haría
+que todos los clones corran con la misma clave conocida. Ver el Skill
+`first-setup` para generarlo.
 
 To add a new variable: add it to `env.ts`, add it to `.env.example`, document it in the first-setup Skill.
 

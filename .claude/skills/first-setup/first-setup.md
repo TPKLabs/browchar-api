@@ -55,24 +55,79 @@ The default values in `.env.example` assume a local PostgreSQL instance with:
 
 Create that database and user in PostgreSQL if they don't exist yet.
 
-### Generating `JWT_SECRET`
+### `JWT_SECRET` — what it is, and how to set it
 
-`JWT_SECRET` ships **empty** in `.env.example` and the app refuses to start
-without it. That is deliberate: a placeholder long enough to pass validation
-would mean everyone who clones the repo runs with the same publicly known key,
-and anyone could then sign a valid token for any user. Generate your own:
+**First, the distinction that trips people up.** There are two different things
+here and you only create one of them:
+
+|                                  | What it is                                            | Who creates it                        |
+| -------------------------------- | ----------------------------------------------------- | ------------------------------------- |
+| `JWT_SECRET`                     | The signing key. One value per environment, set once. | **You**, with the command below       |
+| The access token (`eyJhbGciOi…`) | Proof that a user logged in. One per login.           | The **server**, on `POST /auth/login` |
+
+The secret is the stamp; the token is the stamped document. Anyone can _read_ a
+token — it is signed, not encrypted — but only someone holding the secret can
+_forge_ one. That is why the secret is the single point of failure for the whole
+auth system: whoever has it can sign `{sub: <any user id>}` and log in as anyone,
+without ever knowing a password.
+
+You will never generate a token by hand. You generate the secret, and the app
+does the rest.
+
+#### How
 
 ```bash
 openssl rand -base64 48
 ```
 
-Paste the output into `.env`. It must be at least 32 characters. Never commit
-the real value, and never reuse the same secret across environments — the
-secret is the single point of failure for authentication, so whoever holds it
-can impersonate any account without knowing its password.
+#### Where
 
-`JWT_EXPIRES_IN` is optional (defaults to `7d`) and accepts durations between
-`1m` and `90d`, e.g. `15m`, `2h`, `7d`.
+Paste the output into your local `.env`:
+
+```env
+JWT_SECRET=<the output of the command above>
+```
+
+It must be at least 32 characters — the app validates this and refuses to boot
+otherwise. `.env` is gitignored; the real value never goes in the repo.
+
+#### When
+
+**Now — before the first `npm run start:dev`.** This is not optional setup you
+can defer: `src/config/env.ts` validates the secret at import time, so a missing
+or short value fails at **startup**, not on the first login. If you skip it you
+get this and the process exits:
+
+```
+[ENV] Falta JWT_SECRET. Generá uno con: openssl rand -base64 48
+```
+
+You set it **once per environment**, not per run:
+
+- **Local dev** — once, in `.env`. Keep it as long as you like.
+- **CI / e2e** — already handled: `test/e2e/server.ts` injects a throwaway
+  secret, so you do not need to configure anything for `npm run test:e2e`.
+- **Production (Railway)** — a **different** secret, set as an environment
+  variable in the Railway dashboard, never copied from your local `.env`. See
+  DEV-165.
+
+Rotating the secret invalidates every token signed with the old one, which logs
+every user out. That is the intended way to revoke all sessions at once — there
+is no server-side revocation for individual tokens (see DEV-182).
+
+> **Why `.env.example` ships it empty:** an example value long enough to pass
+> validation would be worse than nothing — everyone cloning the repo would run
+> the same publicly known key, and anyone reading GitHub could forge tokens
+> against any deployment that copied it.
+
+### `JWT_EXPIRES_IN` (optional)
+
+How long an issued token stays valid. Defaults to `7d`; accepts `1m` to `90d`
+(`15m`, `2h`, `7d`). Values below the floor are rejected at startup because they
+produce tokens that expire the instant they are issued.
+
+Since tokens cannot be revoked individually, this duration is the only thing
+that ends a session on its own — shorter is safer, longer is more convenient.
 
 ---
 
@@ -194,11 +249,13 @@ After `npm install`, husky sets up Git hooks automatically. On every commit:
 
 ## Troubleshooting
 
-| Problem                                   | Fix                                                                                                               |
-| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL` connection error           | Check PostgreSQL is running and credentials in `.env` match                                                       |
-| `prisma generate` fails                   | Make sure `npm install` ran successfully first                                                                    |
-| Seed fails with "System not found"        | Run migrations before seeding (`prisma migrate deploy` first)                                                     |
-| Port already in use                       | Change `PORT` in `.env` or kill the process on that port                                                          |
-| `npm publish`/consume: `401 Unauthorized` | `GITHUB_TOKEN` not set or lacks the right scope (`write:packages` to publish, `read:packages` to consume)         |
-| `npm publish`: `403`/SSO error            | If the `TPKLabs` org enforces SSO, authorize the token for the org (the "Configure SSO" button next to the token) |
+| Problem                                   | Fix                                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `[ENV] Falta JWT_SECRET` on startup       | You copied `.env.example`, which ships it empty on purpose. Run `openssl rand -base64 48` and paste it into `.env` |
+| `[ENV] JWT_SECRET debe tener al menos 32` | The value is too short — generate a proper one, do not pad it by hand                                              |
+| `DATABASE_URL` connection error           | Check PostgreSQL is running and credentials in `.env` match                                                        |
+| `prisma generate` fails                   | Make sure `npm install` ran successfully first                                                                     |
+| Seed fails with "System not found"        | Run migrations before seeding (`prisma migrate deploy` first)                                                      |
+| Port already in use                       | Change `PORT` in `.env` or kill the process on that port                                                           |
+| `npm publish`/consume: `401 Unauthorized` | `GITHUB_TOKEN` not set or lacks the right scope (`write:packages` to publish, `read:packages` to consume)          |
+| `npm publish`: `403`/SSO error            | If the `TPKLabs` org enforces SSO, authorize the token for the org (the "Configure SSO" button next to the token)  |
