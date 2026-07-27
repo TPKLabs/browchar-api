@@ -20,8 +20,33 @@ export class AuthService {
    *
    * El schema ya normalizó el email (trim + lowercase) y validó el largo de la
    * contraseña, así que acá sólo queda hashear y persistir.
+   *
+   * La unicidad del email se chequea DOS veces, y las dos hacen falta:
+   *
+   * - El `findUnique` de abajo es una fast path de costo: hashear con argon2 es
+   *   deliberadamente caro y este endpoint no está autenticado, así que repetir
+   *   el mismo email conocido sería una forma barata de quemarnos CPU. Cortar
+   *   antes del hash convierte ese abuso en un lookup por índice. No alcanza
+   *   contra emails random — eso es rate limiting (DEV-210).
+   * - El `catch` del P2002 es el que garantiza la corrección: entre el chequeo
+   *   y el insert hay una ventana en la que otra request puede crear el mismo
+   *   email, y el índice de Postgres es el único árbitro sin esa carrera.
+   *
+   * Nota: devolver 409 ante un email ya registrado permite enumerar cuentas
+   * (saber si una dirección tiene usuario). Es una concesión consciente a la
+   * UX del registro — la alternativa es una respuesta genérica + verificación
+   * por email, que necesita un servicio de mail que hoy no existe. Mitigado
+   * por rate limiting (DEV-210).
    */
   async register(input: AuthRegisterRequestBody): Promise<AuthUserView> {
+    const existing = await prisma.user.findUnique({
+      where: { email: input.email },
+      select: { id: true },
+    });
+    if (existing) {
+      throw new ConflictException('Ya existe una cuenta con ese email');
+    }
+
     const passwordHash = await hashPassword(input.password);
 
     try {
@@ -35,12 +60,8 @@ export class AuthService {
       this.logger.log(`User registrado: ${user.id}`);
       return user;
     } catch (error) {
-      // P2002 = violación de constraint único (el índice de `email`).
-      //
-      // Se resuelve por la excepción de Prisma y no con un findUnique previo a
-      // propósito: entre el chequeo y el insert hay una ventana en la que otra
-      // request puede crear el mismo email, y el índice de Postgres es el único
-      // árbitro sin esa carrera.
+      // P2002 = violación de constraint único (el índice de `email`): otra
+      // request ganó la carrera entre el findUnique de arriba y este insert.
       if (
         typeof error === 'object' &&
         error !== null &&

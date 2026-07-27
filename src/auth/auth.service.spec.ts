@@ -10,6 +10,7 @@ jest.mock('@db', () => ({
   default: {
     user: {
       create: jest.fn(),
+      findUnique: jest.fn(),
     },
   },
 }));
@@ -17,7 +18,7 @@ jest.mock('@db', () => ({
 type AsyncMock = jest.Mock<(...args: any[]) => Promise<any>>;
 
 const prismaMock = prisma as unknown as {
-  user: { create: AsyncMock };
+  user: { create: AsyncMock; findUnique: AsyncMock };
 };
 
 const input = { email: 'ana@mail.com', password: 'una-clave-larga' };
@@ -43,6 +44,8 @@ describe('AuthService', () => {
 
     service = module.get(AuthService);
     jest.clearAllMocks();
+    // Por defecto el email está libre; los casos de duplicado lo sobreescriben.
+    prismaMock.user.findUnique.mockResolvedValue(null);
   });
 
   describe('register', () => {
@@ -92,6 +95,23 @@ describe('AuthService', () => {
     });
 
     it('throws ConflictException when the email is already taken', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({ id: 'existing' });
+
+      await expect(service.register(input)).rejects.toThrow(ConflictException);
+    });
+
+    // El hash es caro a propósito; en un endpoint sin auth, pagarlo para un
+    // email que ya sabemos tomado es CPU regalada a quien quiera abusarlo.
+    it('rejects a taken email without paying the hashing cost', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({ id: 'existing' });
+
+      await expect(service.register(input)).rejects.toThrow(ConflictException);
+      expect(prismaMock.user.create).not.toHaveBeenCalled();
+    });
+
+    // La carrera que el findUnique no puede cerrar: otra request crea el mismo
+    // email entre el chequeo y el insert. El índice de Postgres es el árbitro.
+    it('still maps a P2002 race to ConflictException', async () => {
       prismaMock.user.create.mockRejectedValue(uniqueViolation);
 
       await expect(service.register(input)).rejects.toThrow(ConflictException);

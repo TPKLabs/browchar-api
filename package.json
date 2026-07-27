@@ -37,7 +37,7 @@
     "@nestjs/platform-express": "^11.0.1",
     "@prisma/adapter-pg": "^7.3.0",
     "@prisma/client": "^7.3.0",
-    "@tpklabs/browchar-contracts": "^0.8.0",
+    "@tpklabs/browchar-contracts": "^0.9.0",
     "argon2": "^0.45.1",
     "dotenv": "^17.2.4",
     "nestjs-zod": "^5.4.0",

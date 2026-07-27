@@ -59,6 +59,29 @@ describe('registerSchema', () => {
     expect(result.success).toBe(false);
   });
 
+  // `String.length` cuenta unidades UTF-16, así que un emoji fuera del BMP
+  // vale 2. Sin contar code points, la mitad de estos emojis alcanzaría.
+  it('cuenta code points, no unidades UTF-16', () => {
+    const emojis = '😀'.repeat(PASSWORD_MIN_LENGTH - 1);
+    expect(emojis.length).toBeGreaterThanOrEqual(PASSWORD_MIN_LENGTH);
+
+    const result = registerSchema.safeParse({
+      ...validBody,
+      password: emojis,
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it('acepta el mínimo de code points aunque sean emojis', () => {
+    const result = registerSchema.safeParse({
+      ...validBody,
+      password: '😀'.repeat(PASSWORD_MIN_LENGTH),
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it('no recorta la contraseña: los espacios son caracteres válidos', () => {
     const password = '  passphrase con espacios  ';
     const parsed = registerSchema.parse({ ...validBody, password });
