@@ -1,5 +1,13 @@
-import { registerSchema as contractsRegisterSchema } from '@tpklabs/browchar-contracts';
-import { RegisterDto, registerSchema } from './auth.schemas';
+import {
+  loginSchema as contractsLoginSchema,
+  registerSchema as contractsRegisterSchema,
+} from '@tpklabs/browchar-contracts';
+import {
+  LoginDto,
+  RegisterDto,
+  loginSchema,
+  registerSchema,
+} from './auth.schemas';
 
 /**
  * Este archivo no define reglas propias: las de `registerSchema` (formato de
@@ -25,5 +33,14 @@ describe('auth.schemas', () => {
     expect(
       RegisterDto.schema.safeParse({ ...body, password: 'x' }).success,
     ).toBe(false);
+  });
+
+  it('re-exporta tambien el schema de login del paquete compartido', () => {
+    expect(loginSchema).toBe(contractsLoginSchema);
+  });
+
+  it('LoginDto expone el schema de login, no el de registro', () => {
+    expect(LoginDto.schema).toBe(loginSchema);
+    expect(LoginDto.schema).not.toBe(RegisterDto.schema);
   });
 });

@@ -3,6 +3,9 @@ import { closeSync, openSync } from 'node:fs';
 
 const isWindows = process.platform === 'win32';
 
+/** Clave pública y descartable usada sólo por el server e2e efímero. */
+export const E2E_JWT_SECRET = 'e2e-only-jwt-secret-not-for-any-real-use';
+
 /** Cuánto esperar SIGTERM antes de escalar a SIGKILL, y a SIGKILL antes de darse por vencido. */
 const GRACE_MS = 10000;
 const KILL_MS = 5000;
@@ -30,6 +33,11 @@ export function startServer(
         DATABASE_URL: databaseUrl,
         PORT: String(port),
         NODE_ENV: 'test',
+        // Secreto fijo SOLO para el e2e: `env.ts` exige >=32 caracteres y hace
+        // fallar el arranque si falta, y en CI no hay `.env`. Es público a
+        // propósito — firma tokens de una base efímera que se destruye al
+        // terminar la corrida. Nunca usar este valor fuera de los tests.
+        JWT_SECRET: process.env.JWT_SECRET ?? E2E_JWT_SECRET,
       },
       // Windows (Node >=22): ejecutar el `npm.cmd` exige shell. En POSIX no, y el
       // hijo lidera su propio grupo para matar el árbol (npm → node) con -pid.

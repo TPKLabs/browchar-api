@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './auth.schemas';
+import { LoginDto, RegisterDto } from './auth.schemas';
 
 /**
  * Rutas del recurso Auth.
@@ -16,5 +16,16 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   register(@Body() body: RegisterDto) {
     return this.authService.register(body);
+  }
+
+  /**
+   * 200, no 201: login no crea ningún recurso, sólo emite un token sobre
+   * credenciales existentes. Sin este `@HttpCode`, Nest devolvería 201 por ser
+   * un POST.
+   */
+  @Post('login')
+  @HttpCode(HttpStatus.OK)
+  login(@Body() body: LoginDto) {
+    return this.authService.login(body);
   }
 }

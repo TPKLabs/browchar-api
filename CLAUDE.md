@@ -13,10 +13,29 @@ REST API for managing tabletop RPG character sheets. Built with NestJS, Prisma, 
 
 ## Skills available
 
+Todas viven en `.claude/skills/`:
+
 - `first-setup` — onboarding a new dev or setting up from scratch
 - `pre-commit` — understanding or modifying the pre-commit checks
 - `commit-conventions` — writing commit messages
+- `pr-conventions` — branch names, PR titles and PR body structure
 - `changelog` — understanding or modifying the automatic CHANGELOG.md updater
+- `review-standards` — reviewing a diff against this project's conventions
+
+## Instrucciones para agentes: una sola fuente
+
+`CLAUDE.md` (este archivo) y los cuerpos de `.claude/skills/` son la **fuente
+única**, sin importar qué agente los lea. `AGENTS.md` es sólo un puntero acá,
+para las herramientas que buscan ese nombre por convención.
+
+**No crear copias por herramienta.** Existieron y se desincronizaron:
+`JWT_SECRET` quedó documentado en una copia y ausente en otra. Codex sí exige
+entrypoints bajo `.agents/skills/`, por eso esa carpeta contiene sólo adapters
+`SKILL.md` mínimos que apuntan al cuerpo canónico de `.claude/skills/`.
+
+Las excepciones son las **definiciones de agentes**
+(`.claude/agents/*.md` vs `.codex/agents/*.toml`) y esos entrypoints de
+discovery: son formatos distintos por herramienta, no copias del workflow.
 
 ## Architecture
 
@@ -130,8 +149,16 @@ Never access `process.env` directly. Always go through `src/config/env.ts`:
 
 ```ts
 import { env } from '@/config/env';
-// env.PORT, env.DATABASE_URL, env.NODE_ENV
+// env.NODE_ENV, env.PORT, env.DATABASE_URL, env.CORS_ORIGIN,
+// env.JWT_SECRET, env.JWT_EXPIRES_IN
 ```
+
+`env.ts` **valida al importarse**, así que una configuración inválida rompe el
+arranque y no la primera request. `JWT_SECRET` es requerido (mínimo 32
+caracteres) y `JWT_EXPIRES_IN` está acotado a `1m`–`90d`. `.env.example` trae
+`JWT_SECRET=` vacío a propósito: un placeholder que pasara la validación haría
+que todos los clones corran con la misma clave conocida. Ver el Skill
+`first-setup` para generarlo.
 
 To add a new variable: add it to `env.ts`, add it to `.env.example`, document it in the first-setup Skill.
 
@@ -159,14 +186,16 @@ this.logger.error('...');
 
 Classes are PascalCase with the role as suffix: `PlaybooksController`, `PlaybooksService`, `PlaybooksModule`.
 
-## What does not exist yet
+## Existing patterns and remaining gaps
 
-Do not assume or introduce these patterns — they are not in the codebase:
-
-- **DTOs** (`class-validator`, `class-transformer`) — request validation is not implemented
-- **Global exception filters** — no centralized error handling
-- **Repository layer** — services call Prisma directly
-- **Authentication / guards** — no auth layer yet
+- Request validation uses shared Zod schemas wrapped with `createZodDto` and a
+  global `ZodValidationPipe`. Do not introduce `class-validator` or
+  `class-transformer`.
+- `AllExceptionsFilter` is the global exception filter and owns the standard
+  error envelope.
+- There is no repository layer; services call Prisma directly.
+- Register/login and JWT issuance exist. Guards and enforcement on protected
+  routes do not exist yet.
 
 ## Useful commands
 

@@ -1,4 +1,7 @@
+import { Logger } from '@nestjs/common';
 import * as argon2 from 'argon2';
+
+const logger = new Logger('PasswordHasher');
 
 /**
  * argon2id: recomendado por OWASP como default de propósito general (resiste
@@ -30,13 +33,50 @@ const HASH_OPTIONS: argon2.HashOptions = {
   parallelism: 1,
 };
 
+/**
+ * Hash señuelo con los mismos parámetros que los hashes reales.
+ *
+ * No necesita ser secreto: su función es pagar el costo de Argon2 cuando no
+ * existe un hash usable, para que ese camino no revele cuentas por timing.
+ */
+export const DUMMY_PASSWORD_HASH =
+  '$argon2id$v=19$m=19456,p=1,t=2$xZLEAjnFkHMadrma/4m6TQ$dIRMjz//e4/I7IntNueNSTKR7r+iFLJxvLv1h7t6FDA';
+
 export async function hashPassword(plainPassword: string): Promise<string> {
   return argon2.hash(plainPassword, HASH_OPTIONS);
 }
 
+/**
+ * Compara una contraseña contra un hash almacenado.
+ *
+ * Devuelve `false` —en vez de propagar— cuando el hash guardado no es un
+ * argon2 válido. No es paranoia: `argon2.verify` **lanza** ante un hash
+ * malformado (`TypeError: pchstr must contain a $ as first char`), y esa
+ * excepción se convertiría en un 500 mientras un email inexistente devuelve
+ * 401. Esa diferencia de status alcanza para saber que la cuenta existe, que
+ * es justo lo que el 401 genérico del login busca evitar.
+ *
+ * Tratarlo como credencial inválida es además el default seguro: una fila con
+ * el hash corrupto no debe poder abrir sesión. Se loguea como error porque
+ * significa que hay datos mal escritos —no una contraseña equivocada— y
+ * alguien tiene que enterarse.
+ */
 export async function verifyPassword(
   passwordHash: string,
   plainPassword: string,
 ): Promise<boolean> {
-  return argon2.verify(passwordHash, plainPassword);
+  try {
+    return await argon2.verify(passwordHash, plainPassword);
+  } catch (error) {
+    // El hash NO se loguea: es material sensible aunque esté roto.
+    logger.error(
+      `Hash almacenado inválido: no se pudo verificar (${(error as Error).message})`,
+    );
+
+    // Parsear un hash roto falla casi instantáneamente. Verificar el hash
+    // señuelo antes de devolver false iguala el costo con un email inexistente
+    // o una contraseña incorrecta y evita reabrir el oráculo temporal.
+    await argon2.verify(DUMMY_PASSWORD_HASH, plainPassword);
+    return false;
+  }
 }

@@ -1,8 +1,10 @@
 import { Test } from '@nestjs/testing';
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 import { jest, describe, it, beforeEach, expect } from '@jest/globals';
 import { AuthService } from './auth.service';
-import { verifyPassword } from './password-hasher';
+import * as passwordHasher from './password-hasher';
+import { hashPassword, verifyPassword } from './password-hasher';
 import prisma from '@db';
 
 jest.mock('@db', () => ({
@@ -34,15 +36,25 @@ const uniqueViolation = Object.assign(new Error('Unique constraint failed'), {
   code: 'P2002',
 });
 
+const JWT_TEST_SECRET = 'test-only-secret-at-least-32-characters-long';
+
 describe('AuthService', () => {
   let service: AuthService;
+  let jwtService: JwtService;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
+      imports: [
+        JwtModule.register({
+          secret: JWT_TEST_SECRET,
+          signOptions: { expiresIn: '7d' },
+        }),
+      ],
       providers: [AuthService],
     }).compile();
 
     service = module.get(AuthService);
+    jwtService = module.get(JwtService);
     jest.clearAllMocks();
     // Por defecto el email está libre; los casos de duplicado lo sobreescriben.
     prismaMock.user.findUnique.mockResolvedValue(null);
@@ -122,6 +134,148 @@ describe('AuthService', () => {
       prismaMock.user.create.mockRejectedValue(boom);
 
       await expect(service.register(input)).rejects.toThrow(boom);
+    });
+  });
+
+  describe('login', () => {
+    const password = 'la-clave-correcta';
+    let storedUser: {
+      id: string;
+      email: string;
+      createdAt: Date;
+      passwordHash: string;
+    };
+
+    beforeEach(async () => {
+      storedUser = { ...mockUser, passwordHash: await hashPassword(password) };
+    });
+
+    it('returns a signed token and the user on valid credentials', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(storedUser);
+
+      const result = await service.login({ email: input.email, password });
+
+      expect(result.user).toEqual(mockUser);
+      expect(typeof result.accessToken).toBe('string');
+      expect(result.expiresIn).toBeGreaterThan(0);
+    });
+
+    it('never leaks passwordHash in the response', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(storedUser);
+
+      const result = await service.login({ email: input.email, password });
+
+      expect(result.user).not.toHaveProperty('passwordHash');
+      expect(JSON.stringify(result)).not.toContain(storedUser.passwordHash);
+    });
+
+    // El payload va firmado pero NO cifrado: cualquiera con el token lo lee.
+    it('puts only the user id in the token payload, no PII', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(storedUser);
+
+      const { accessToken } = await service.login({
+        email: input.email,
+        password,
+      });
+      const payload = jwtService.verify<Record<string, unknown>>(accessToken, {
+        secret: JWT_TEST_SECRET,
+      });
+
+      expect(payload.sub).toBe(mockUser.id);
+      expect(payload).not.toHaveProperty('email');
+      expect(JSON.stringify(payload)).not.toContain(mockUser.email);
+    });
+
+    it('reports expiresIn consistent with the token own expiry', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(storedUser);
+
+      const { accessToken, expiresIn } = await service.login({
+        email: input.email,
+        password,
+      });
+      const { exp, iat } = jwtService.decode<{ exp: number; iat: number }>(
+        accessToken,
+      );
+
+      expect(expiresIn).toBe(exp - iat);
+    });
+
+    it('rejects a wrong password', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(storedUser);
+
+      await expect(
+        service.login({ email: input.email, password: 'la-clave-incorrecta' }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('rejects an unknown email', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.login({ email: 'nadie@mail.com', password }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    // Distinguir los dos fallos permitiria averiguar que direcciones tienen
+    // cuenta probando el endpoint de login.
+    it('gives an identical error for unknown email and wrong password', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      const unknownEmail = await service
+        .login({ email: 'nadie@mail.com', password })
+        .catch((e: UnauthorizedException) => e);
+
+      prismaMock.user.findUnique.mockResolvedValue(storedUser);
+      const wrongPassword = await service
+        .login({ email: input.email, password: 'incorrecta' })
+        .catch((e: UnauthorizedException) => e);
+
+      expect(unknownEmail).toBeInstanceOf(UnauthorizedException);
+      expect(wrongPassword).toBeInstanceOf(UnauthorizedException);
+      expect((unknownEmail as UnauthorizedException).message).toBe(
+        (wrongPassword as UnauthorizedException).message,
+      );
+      expect((unknownEmail as UnauthorizedException).getStatus()).toBe(
+        (wrongPassword as UnauthorizedException).getStatus(),
+      );
+    });
+
+    // El mensaje generico no sirve si el tiempo de respuesta delata lo mismo:
+    // sin el hash senuelo, el email inexistente vuelve sin pagar argon2.
+    //
+    // Se afirma sobre la LLAMADA, no sobre el reloj: un umbral de milisegundos
+    // pasa igual en un runner cargado aunque se borre la verificacion, y puede
+    // fallar en hardware rapido con el codigo correcto.
+    it('still verifies against a dummy hash when the email does not exist', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      const verifySpy = jest.spyOn(passwordHasher, 'verifyPassword');
+
+      await service
+        .login({ email: 'nadie@mail.com', password })
+        .catch(() => undefined);
+
+      expect(verifySpy).toHaveBeenCalledTimes(1);
+      const [hashUsed, passwordUsed] = verifySpy.mock.calls[0];
+      expect(passwordUsed).toBe(password);
+      // Y el hash contra el que compara tiene que ser un argon2id REAL: uno
+      // inventado haria que verify lance en vez de devolver false, y el login
+      // fallido se convertiria en un 500.
+      expect(hashUsed).toMatch(/^\$argon2id\$v=19\$m=\d+,p=\d+,t=\d+\$/);
+      await expect(verifyPassword(hashUsed, password)).resolves.toBe(false);
+    });
+
+    // El hash senuelo tiene que costar lo mismo que uno real: si sus parametros
+    // fueran mas baratos, el email inexistente volveria antes igual.
+    it('uses dummy hash parameters matching the real ones', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      const verifySpy = jest.spyOn(passwordHasher, 'verifyPassword');
+
+      await service
+        .login({ email: 'nadie@mail.com', password })
+        .catch(() => undefined);
+
+      const paramsOf = (hash: string) => hash.split('$')[3];
+      const realHash = await hashPassword('cualquier-cosa');
+      expect(paramsOf(verifySpy.mock.calls[0][0])).toBe(paramsOf(realHash));
     });
   });
 });
