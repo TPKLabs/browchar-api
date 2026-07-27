@@ -7,16 +7,17 @@ convention. It is deliberately a pointer and not a copy.
 
 ## Where things are
 
-| What                                                                                              | Where                                                                                               |
-| ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Project instructions (stack, architecture, conventions)                                           | [`CLAUDE.md`](./CLAUDE.md)                                                                          |
-| Skills (first-setup, commit-conventions, pr-conventions, pre-commit, changelog, review-standards) | [`.claude/skills/`](./.claude/skills/)                                                              |
-| Agent definitions                                                                                 | [`.claude/agents/`](./.claude/agents/) (Claude Code) · [`.codex/agents/`](./.codex/agents/) (Codex) |
+| What                                                    | Where                                                                                               |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Project instructions (stack, architecture, conventions) | [`CLAUDE.md`](./CLAUDE.md)                                                                          |
+| Canonical skill bodies                                  | [`.claude/skills/`](./.claude/skills/)                                                              |
+| Codex skill discovery adapters                          | [`.agents/skills/`](./.agents/skills/)                                                              |
+| Agent definitions                                       | [`.claude/agents/`](./.claude/agents/) (Claude Code) · [`.codex/agents/`](./.codex/agents/) (Codex) |
 
-Those paths are the single source of truth regardless of which agent is
-reading this. `.claude/` is not Claude-specific content — it is just where this
-repo keeps its agent instructions, and it is the directory that is committed
-and reviewed.
+The workflow content in `CLAUDE.md` and `.claude/skills/` is the single source
+of truth regardless of which agent is reading it. `.agents/skills/` contains
+only the small `SKILL.md` entrypoints Codex requires for discovery; each one
+points to its canonical body instead of copying it.
 
 ## Do not mirror these files
 
@@ -26,10 +27,10 @@ environment variable (`JWT_SECRET`) was written up in one copy and missing from
 the other, so whoever read the wrong one got stale setup instructions with no
 way to tell.
 
-If your tooling wants per-tool copies of these files, do not create them — read
-the canonical paths above instead. `.agents/` is gitignored precisely so a
-regenerated mirror cannot be committed and start drifting again.
+If your tooling wants per-tool copies of these files, do not copy the workflow
+body. Add a thin discovery adapter that points to the canonical path and keeps
+only the metadata required by that tool.
 
-Tool-specific **agent definitions** are the one exception: those are genuinely
-different formats per tool (`.claude/agents/*.md` vs `.codex/agents/*.toml`),
-not copies of the same content, so each tool keeps its own.
+Tool-specific **agent definitions** and skill discovery entrypoints are the
+exceptions: they are genuinely different formats/locations per tool, while the
+substantive instructions remain canonical.

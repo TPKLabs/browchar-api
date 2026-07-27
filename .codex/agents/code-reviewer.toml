@@ -18,7 +18,7 @@ Criterios generales:\r
 \r
 Específico de backend Node:\r
 - Manejo de errores async: todo `await` con su manejo de error; sin promesas sin await ni rechazos sin capturar. En Express, los handlers async deben propagar el error a `next()` (o usar un wrapper async). En NestJS, usar exception filters.\r
-- Validación de entradas: nunca confiar en `req.body`, `req.params` ni `req.query`. En NestJS, DTOs con class-validator + ValidationPipe; en Express, un validador de esquema (zod/joi).\r
+- Validación de entradas: nunca confiar en `req.body`, `req.params` ni `req.query`. Este NestJS usa schemas compartidos de `@tpklabs/browchar-contracts`, DTOs con `createZodDto` y el `ZodValidationPipe` global; no introducir class-validator/class-transformer.\r
 - Seguridad: queries parametrizadas (no concatenar SQL/NoSQL), chequeos de autenticación/autorización en rutas protegidas, sin filtrar stack traces ni datos internos al cliente, sin loguear secretos ni PII.\r
 - Semántica HTTP: códigos de estado correctos y forma de respuesta de error consistente.\r
 - Performance y recursos: no bloquear el event loop (evitar `fs` síncrono o trabajo de CPU pesado en el path del request), conexiones y transacciones de DB liberadas correctamente.\r

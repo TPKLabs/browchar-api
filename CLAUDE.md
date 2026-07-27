@@ -24,20 +24,18 @@ Todas viven en `.claude/skills/`:
 
 ## Instrucciones para agentes: una sola fuente
 
-`CLAUDE.md` (este archivo) y `.claude/skills/` son la **fuente única**, sin
-importar qué agente los lea. `AGENTS.md` es sólo un puntero acá, para las
-herramientas que buscan ese nombre por convención.
+`CLAUDE.md` (este archivo) y los cuerpos de `.claude/skills/` son la **fuente
+única**, sin importar qué agente los lea. `AGENTS.md` es sólo un puntero acá,
+para las herramientas que buscan ese nombre por convención.
 
-**No crear copias por herramienta.** Existieron: un duplicado de este archivo
-en `AGENTS.md` y uno de `.claude/skills/` en `.agents/skills/`. Se
-desincronizaron — `JWT_SECRET` quedó documentado en una copia y ausente en la
-otra, así que quien leía la equivocada recibía instrucciones viejas sin forma
-de darse cuenta. `.agents/` está en `.gitignore` para que un espejo regenerado
-no vuelva a commitearse.
+**No crear copias por herramienta.** Existieron y se desincronizaron:
+`JWT_SECRET` quedó documentado en una copia y ausente en otra. Codex sí exige
+entrypoints bajo `.agents/skills/`, por eso esa carpeta contiene sólo adapters
+`SKILL.md` mínimos que apuntan al cuerpo canónico de `.claude/skills/`.
 
-La excepción son las **definiciones de agentes** (`.claude/agents/*.md` vs
-`.codex/agents/*.toml`): son formatos distintos por herramienta, no copias del
-mismo contenido, así que cada una mantiene la suya.
+Las excepciones son las **definiciones de agentes**
+(`.claude/agents/*.md` vs `.codex/agents/*.toml`) y esos entrypoints de
+discovery: son formatos distintos por herramienta, no copias del workflow.
 
 ## Architecture
 
@@ -188,14 +186,16 @@ this.logger.error('...');
 
 Classes are PascalCase with the role as suffix: `PlaybooksController`, `PlaybooksService`, `PlaybooksModule`.
 
-## What does not exist yet
+## Existing patterns and remaining gaps
 
-Do not assume or introduce these patterns — they are not in the codebase:
-
-- **DTOs** (`class-validator`, `class-transformer`) — request validation is not implemented
-- **Global exception filters** — no centralized error handling
-- **Repository layer** — services call Prisma directly
-- **Authentication / guards** — no auth layer yet
+- Request validation uses shared Zod schemas wrapped with `createZodDto` and a
+  global `ZodValidationPipe`. Do not introduce `class-validator` or
+  `class-transformer`.
+- `AllExceptionsFilter` is the global exception filter and owns the standard
+  error envelope.
+- There is no repository layer; services call Prisma directly.
+- Register/login and JWT issuance exist. Guards and enforcement on protected
+  routes do not exist yet.
 
 ## Useful commands
 

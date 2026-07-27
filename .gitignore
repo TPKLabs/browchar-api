@@ -59,7 +59,3 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 prisma/generated
-
-# Espejos de instrucciones generados por otras herramientas.
-# La fuente unica es CLAUDE.md + .claude/skills/ (ver AGENTS.md).
-.agents/
