@@ -30,6 +30,12 @@ export function startServer(
         DATABASE_URL: databaseUrl,
         PORT: String(port),
         NODE_ENV: 'test',
+        // Secreto fijo SOLO para el e2e: `env.ts` exige >=32 caracteres y hace
+        // fallar el arranque si falta, y en CI no hay `.env`. Es público a
+        // propósito — firma tokens de una base efímera que se destruye al
+        // terminar la corrida. Nunca usar este valor fuera de los tests.
+        JWT_SECRET:
+          process.env.JWT_SECRET ?? 'e2e-only-jwt-secret-not-for-any-real-use',
       },
       // Windows (Node >=22): ejecutar el `npm.cmd` exige shell. En POSIX no, y el
       // hijo lidera su propio grupo para matar el árbol (npm → node) con -pid.

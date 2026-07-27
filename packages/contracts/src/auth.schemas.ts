@@ -79,3 +79,21 @@ export const registerSchema = z.object({
 
 /** Body de `POST /auth/register` (convención DEV-197). */
 export type AuthRegisterRequestBody = z.infer<typeof registerSchema>;
+
+/**
+ * `POST /auth/login`
+ *
+ * La contraseña acá se valida sólo como "string no vacío", **a propósito**: no
+ * se reusa `passwordSchema`. Las reglas de largo aplican a elegir una
+ * contraseña, no a presentarla. Si el login exigiera 12 caracteres, una cuenta
+ * creada bajo una política anterior más laxa quedaría sin poder entrar, y
+ * además el error de validación revelaría la política a un atacante antes de
+ * siquiera intentar credenciales.
+ */
+export const loginSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1, 'La contraseña es requerida'),
+});
+
+/** Body de `POST /auth/login` (convención DEV-197). */
+export type AuthLoginRequestBody = z.infer<typeof loginSchema>;

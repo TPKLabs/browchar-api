@@ -27,3 +27,21 @@ export interface AuthUser {
  * un `POST /auth/login` — el server no mezcla las dos responsabilidades.
  */
 export type AuthRegisterResponse = AuthUser;
+
+/**
+ * `POST /auth/login` — el body es `AuthLoginRequestBody` (auth.schemas).
+ *
+ * Devuelve el token y el usuario juntos para que el front no tenga que
+ * encadenar un `GET /auth/me` inmediatamente después de entrar. `/auth/me`
+ * sigue haciendo falta igual: al recargar la página el front tiene el token
+ * guardado pero no el usuario.
+ *
+ * `expiresIn` viaja en segundos (no una fecha absoluta) para que el cliente no
+ * dependa de que su reloj coincida con el del server.
+ */
+export interface AuthLoginResponse {
+  accessToken: string;
+  /** Vida del token en segundos, contada desde que se emitió. */
+  expiresIn: number;
+  user: AuthUser;
+}
