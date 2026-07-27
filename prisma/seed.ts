@@ -3,6 +3,7 @@ import path from 'node:path';
 import { Logger } from '@nestjs/common';
 import prisma from '@db';
 import { buildTemplateSchema } from '@tpklabs/browchar-contracts';
+import { hashPassword } from '../src/auth/password-hasher';
 import type { Prisma } from './generated/client';
 import type { TemplateSection } from '../src/common/types/template.types';
 import { env } from '../src/config/env';
@@ -296,16 +297,34 @@ function validateBasePlaybookSeed(basePlaybook: BasePlaybook, source: string) {
   }
 }
 
+/**
+ * Contraseña del usuario demo. Es pública a propósito: sirve para probar el
+ * login en desarrollo. El seed de usuarios no corre en producción.
+ */
+const DEMO_PASSWORD = 'demo-password-1234';
+
 async function seedUsers() {
-  // Usuario demo SOLO para desarrollo (sin auth todavía, DEV-5).
-  // Permite probar POST /characters usando ownerId: "usr_demo".
+  // Usuario demo SOLO para desarrollo. Permite probar POST /characters con
+  // ownerId "usr_demo" y ahora también `POST /auth/login`.
+  //
+  // El hash se computa de verdad con argon2: antes era el literal
+  // 'dev-only-not-a-real-hash', y desde que existe el login eso rompía —
+  // `argon2.verify` LANZA ante un hash malformado, así que esta cuenta
+  // devolvía 500 mientras un email inexistente devolvía 401, revelando que
+  // existía. `verifyPassword` ahora además tolera hashes corruptos, pero la
+  // fila igual tiene que ser válida para que el demo pueda entrar.
+  const passwordHash = await hashPassword(DEMO_PASSWORD);
+
   const demo = await prisma.user.upsert({
     where: { email: 'demo@browchar.dev' },
-    update: {},
+    // `update` reescribe el hash a propósito: quien ya tenga la base seedeada
+    // de antes arrastra el hash inválido, y un `update: {}` lo dejaría roto
+    // para siempre por ser el upsert idempotente.
+    update: { passwordHash },
     create: {
       id: 'usr_demo',
       email: 'demo@browchar.dev',
-      passwordHash: 'dev-only-not-a-real-hash',
+      passwordHash,
     },
   });
 

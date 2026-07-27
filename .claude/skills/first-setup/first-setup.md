@@ -43,6 +43,8 @@ Then open `.env` and set:
 NODE_ENV=development
 PORT=3000
 DATABASE_URL="postgresql://<user>:<password>@localhost:5432/<dbname>?schema=public"
+JWT_SECRET=<generate one — see below>
+JWT_EXPIRES_IN=7d
 ```
 
 The default values in `.env.example` assume a local PostgreSQL instance with:
@@ -52,6 +54,25 @@ The default values in `.env.example` assume a local PostgreSQL instance with:
 - database: `rpg_sheets_db`
 
 Create that database and user in PostgreSQL if they don't exist yet.
+
+### Generating `JWT_SECRET`
+
+`JWT_SECRET` ships **empty** in `.env.example` and the app refuses to start
+without it. That is deliberate: a placeholder long enough to pass validation
+would mean everyone who clones the repo runs with the same publicly known key,
+and anyone could then sign a valid token for any user. Generate your own:
+
+```bash
+openssl rand -base64 48
+```
+
+Paste the output into `.env`. It must be at least 32 characters. Never commit
+the real value, and never reuse the same secret across environments — the
+secret is the single point of failure for authentication, so whoever holds it
+can impersonate any account without knowing its password.
+
+`JWT_EXPIRES_IN` is optional (defaults to `7d`) and accepts durations between
+`1m` and `90d`, e.g. `15m`, `2h`, `7d`.
 
 ---
 

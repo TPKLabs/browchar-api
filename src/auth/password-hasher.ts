@@ -1,4 +1,7 @@
+import { Logger } from '@nestjs/common';
 import * as argon2 from 'argon2';
+
+const logger = new Logger('PasswordHasher');
 
 /**
  * argon2id: recomendado por OWASP como default de propósito general (resiste
@@ -34,9 +37,32 @@ export async function hashPassword(plainPassword: string): Promise<string> {
   return argon2.hash(plainPassword, HASH_OPTIONS);
 }
 
+/**
+ * Compara una contraseña contra un hash almacenado.
+ *
+ * Devuelve `false` —en vez de propagar— cuando el hash guardado no es un
+ * argon2 válido. No es paranoia: `argon2.verify` **lanza** ante un hash
+ * malformado (`TypeError: pchstr must contain a $ as first char`), y esa
+ * excepción se convertiría en un 500 mientras un email inexistente devuelve
+ * 401. Esa diferencia de status alcanza para saber que la cuenta existe, que
+ * es justo lo que el 401 genérico del login busca evitar.
+ *
+ * Tratarlo como credencial inválida es además el default seguro: una fila con
+ * el hash corrupto no debe poder abrir sesión. Se loguea como error porque
+ * significa que hay datos mal escritos —no una contraseña equivocada— y
+ * alguien tiene que enterarse.
+ */
 export async function verifyPassword(
   passwordHash: string,
   plainPassword: string,
 ): Promise<boolean> {
-  return argon2.verify(passwordHash, plainPassword);
+  try {
+    return await argon2.verify(passwordHash, plainPassword);
+  } catch (error) {
+    // El hash NO se loguea: es material sensible aunque esté roto.
+    logger.error(
+      `Hash almacenado inválido: no se pudo verificar (${(error as Error).message})`,
+    );
+    return false;
+  }
 }

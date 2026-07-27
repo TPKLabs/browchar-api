@@ -14,6 +14,7 @@ a known issue or a future consideration in a commit message.
 
 ### Fixed
 
+- **auth:** stop malformed stored hashes from 500-ing login
 - **auth:** harden password policy and cut registration hashing cost
 - **deps:** align contracts pin with the 0.4.0 bump
 - **characters:** drop duplicated character_name/playbook_name fields

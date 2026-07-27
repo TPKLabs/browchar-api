@@ -61,13 +61,23 @@ function parseCorsOrigins(value: string | undefined): string[] {
  */
 const JWT_SECRET_MIN_LENGTH = 32;
 
+/** Cómo obtener un secreto válido; se repite en todos los errores de abajo. */
+const JWT_SECRET_HINT = 'Generá uno con: openssl rand -base64 48';
+
 function parseJwtSecret(): string {
-  const secret = getRequiredEnv('JWT_SECRET');
+  const secret = process.env.JWT_SECRET;
+
+  // `.env.example` trae `JWT_SECRET=` vacío A PROPÓSITO, así que este es el
+  // camino que pisa cualquiera que arranque copiando ese archivo. El mensaje
+  // tiene que decirle qué hacer, no sólo que falta.
+  if (!secret || secret.trim().length === 0) {
+    throw new Error(`[ENV] Falta JWT_SECRET. ${JWT_SECRET_HINT}`);
+  }
 
   if (secret.length < JWT_SECRET_MIN_LENGTH) {
     throw new Error(
       `[ENV] JWT_SECRET debe tener al menos ${JWT_SECRET_MIN_LENGTH} caracteres ` +
-        `(tiene ${secret.length}). Generá uno con: openssl rand -base64 48`,
+        `(tiene ${secret.length}). ${JWT_SECRET_HINT}`,
     );
   }
 
@@ -84,26 +94,69 @@ function parseJwtSecret(): string {
 export type JwtDuration =
   `${number}${'ms' | 's' | 'm' | 'h' | 'd' | 'w' | 'y'}`;
 
+/** Milisegundos por unidad, para acotar la duración configurada. */
+const MS_PER_UNIT: Record<string, number> = {
+  ms: 1,
+  s: 1000,
+  m: 60_000,
+  h: 3_600_000,
+  d: 86_400_000,
+  w: 604_800_000,
+  y: 31_536_000_000,
+};
+
+/**
+ * Piso: un token que vive menos de un minuto es inservible. `0s` o `1ms`
+ * producen `exp === iat`, o sea un token **ya vencido al emitirse**: el login
+ * responde 200 con `expiresIn: 0` y después todo request falla. Es un error de
+ * configuración que conviene atajar al arrancar y no en producción.
+ */
+const JWT_EXPIRES_MIN_MS = 60_000;
+
+/**
+ * Techo: sin revocación del lado del server (DEV-182), la expiración es lo
+ * único que termina una sesión. Un token de un año es una credencial casi
+ * permanente si se filtra.
+ */
+const JWT_EXPIRES_MAX_MS = 90 * 86_400_000;
+
 /**
  * Vida del access token.
  *
  * Con JWT stateless la expiración es el ÚNICO mecanismo real de fin de sesión:
  * un token emitido no se puede revocar del lado del server (ver DEV-182). Por
  * eso es configurable — el valor definitivo se decide junto con el manejo de
- * sesión del front (DEV-31).
+ * sesión del front (DEV-31) — pero acotado por ambos extremos.
  */
 function parseJwtExpiresIn(value: string | undefined): JwtDuration {
   if (!value) {
     return '7d';
   }
 
-  if (!/^\d+(ms|s|m|h|d|w|y)$/.test(value)) {
+  const match = /^(\d+)(ms|s|m|h|d|w|y)$/.exec(value);
+  if (!match) {
     throw new Error(
       '[ENV] JWT_EXPIRES_IN debe ser una duración tipo "15m", "2h" o "7d"',
     );
   }
 
-  // El regex de arriba ya garantiza la forma; TS no puede inferirlo solo.
+  const totalMs = Number(match[1]) * MS_PER_UNIT[match[2]];
+
+  if (totalMs < JWT_EXPIRES_MIN_MS) {
+    throw new Error(
+      `[ENV] JWT_EXPIRES_IN (${value}) es demasiado corto: el mínimo es 1m. ` +
+        'Una duración menor emite tokens vencidos al instante.',
+    );
+  }
+
+  if (totalMs > JWT_EXPIRES_MAX_MS) {
+    throw new Error(
+      `[ENV] JWT_EXPIRES_IN (${value}) es demasiado largo: el máximo es 90d. ` +
+        'Sin revocación server-side, un token filtrado sirve hasta que expire.',
+    );
+  }
+
+  // El regex ya garantiza la forma; TS no puede inferirlo solo.
   return value as JwtDuration;
 }
 

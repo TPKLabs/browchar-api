@@ -3,6 +3,7 @@ import { ConflictException, UnauthorizedException } from '@nestjs/common';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { jest, describe, it, beforeEach, expect } from '@jest/globals';
 import { AuthService } from './auth.service';
+import * as passwordHasher from './password-hasher';
 import { hashPassword, verifyPassword } from './password-hasher';
 import prisma from '@db';
 
@@ -240,19 +241,41 @@ describe('AuthService', () => {
 
     // El mensaje generico no sirve si el tiempo de respuesta delata lo mismo:
     // sin el hash senuelo, el email inexistente vuelve sin pagar argon2.
+    //
+    // Se afirma sobre la LLAMADA, no sobre el reloj: un umbral de milisegundos
+    // pasa igual en un runner cargado aunque se borre la verificacion, y puede
+    // fallar en hardware rapido con el codigo correcto.
     it('still verifies against a dummy hash when the email does not exist', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
+      const verifySpy = jest.spyOn(passwordHasher, 'verifyPassword');
 
-      const started = Date.now();
       await service
         .login({ email: 'nadie@mail.com', password })
         .catch(() => undefined);
-      const unknownEmailMs = Date.now() - started;
 
-      // Un lookup que corta antes de hashear responde en ~0ms; argon2 con los
-      // parametros de OWASP cuesta ~20ms. El piso deja margen para maquinas
-      // lentas sin volverse un test flaky.
-      expect(unknownEmailMs).toBeGreaterThan(5);
+      expect(verifySpy).toHaveBeenCalledTimes(1);
+      const [hashUsed, passwordUsed] = verifySpy.mock.calls[0];
+      expect(passwordUsed).toBe(password);
+      // Y el hash contra el que compara tiene que ser un argon2id REAL: uno
+      // inventado haria que verify lance en vez de devolver false, y el login
+      // fallido se convertiria en un 500.
+      expect(hashUsed).toMatch(/^\$argon2id\$v=19\$m=\d+,p=\d+,t=\d+\$/);
+      await expect(verifyPassword(hashUsed, password)).resolves.toBe(false);
+    });
+
+    // El hash senuelo tiene que costar lo mismo que uno real: si sus parametros
+    // fueran mas baratos, el email inexistente volveria antes igual.
+    it('uses dummy hash parameters matching the real ones', async () => {
+      prismaMock.user.findUnique.mockResolvedValue(null);
+      const verifySpy = jest.spyOn(passwordHasher, 'verifyPassword');
+
+      await service
+        .login({ email: 'nadie@mail.com', password })
+        .catch(() => undefined);
+
+      const paramsOf = (hash: string) => hash.split('$')[3];
+      const realHash = await hashPassword('cualquier-cosa');
+      expect(paramsOf(verifySpy.mock.calls[0][0])).toBe(paramsOf(realHash));
     });
   });
 });
