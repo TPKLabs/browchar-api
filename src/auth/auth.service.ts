@@ -15,7 +15,11 @@ import type {
   AuthUserView,
   JwtPayload,
 } from '@/common/types/auth.types';
-import { hashPassword, verifyPassword } from './password-hasher';
+import {
+  DUMMY_PASSWORD_HASH,
+  hashPassword,
+  verifyPassword,
+} from './password-hasher';
 
 /** Columnas que la API puede exponer de un User: nunca `passwordHash`. */
 const PUBLIC_USER_SELECT = {
@@ -38,9 +42,6 @@ const PUBLIC_USER_SELECT = {
  * un hash argon2 válido: uno inventado haría que `verify` lance una excepción
  * en vez de devolver false, convirtiendo el login fallido en un 500.
  */
-const DUMMY_PASSWORD_HASH =
-  '$argon2id$v=19$m=19456,p=1,t=2$xZLEAjnFkHMadrma/4m6TQ$dIRMjz//e4/I7IntNueNSTKR7r+iFLJxvLv1h7t6FDA';
-
 @Injectable()
 export class AuthService {
   constructor(private readonly jwtService: JwtService) {}

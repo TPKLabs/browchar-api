@@ -1,6 +1,18 @@
-import { hashPassword, verifyPassword } from './password-hasher';
+import { Logger } from '@nestjs/common';
+import { afterEach, jest } from '@jest/globals';
+import {
+  DUMMY_PASSWORD_HASH,
+  hashPassword,
+  verifyPassword,
+} from './password-hasher';
+
+const argon2Module = jest.requireActual<typeof import('argon2')>('argon2');
 
 describe('password-hasher', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('hashes a password into an argon2id string distinct from the plaintext', async () => {
     const hash = await hashPassword('correct horse battery staple');
 
@@ -34,13 +46,39 @@ describe('password-hasher', () => {
   // daria 500 mientras un email inexistente da 401 — diferencia suficiente
   // para saber que la cuenta existe.
   it('returns false instead of throwing on a malformed stored hash', async () => {
+    const loggerErrorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+
     await expect(
       verifyPassword('dev-only-not-a-real-hash', 'cualquier-cosa'),
     ).resolves.toBe(false);
+    expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
   });
 
   it('returns false on an empty stored hash', async () => {
+    const loggerErrorSpy = jest
+      .spyOn(Logger.prototype, 'error')
+      .mockImplementation(() => undefined);
+
     await expect(verifyPassword('', 'cualquier-cosa')).resolves.toBe(false);
+    expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('pays a real dummy verification after a malformed stored hash', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const verifySpy = jest.spyOn(argon2Module, 'verify');
+
+    await expect(
+      verifyPassword('dev-only-not-a-real-hash', 'cualquier-cosa'),
+    ).resolves.toBe(false);
+
+    expect(verifySpy).toHaveBeenCalledTimes(2);
+    expect(verifySpy).toHaveBeenNthCalledWith(
+      2,
+      DUMMY_PASSWORD_HASH,
+      'cualquier-cosa',
+    );
   });
 
   it('pins the OWASP-minimum parameters in the produced hash', async () => {

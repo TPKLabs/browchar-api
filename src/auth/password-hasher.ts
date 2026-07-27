@@ -33,6 +33,15 @@ const HASH_OPTIONS: argon2.HashOptions = {
   parallelism: 1,
 };
 
+/**
+ * Hash señuelo con los mismos parámetros que los hashes reales.
+ *
+ * No necesita ser secreto: su función es pagar el costo de Argon2 cuando no
+ * existe un hash usable, para que ese camino no revele cuentas por timing.
+ */
+export const DUMMY_PASSWORD_HASH =
+  '$argon2id$v=19$m=19456,p=1,t=2$xZLEAjnFkHMadrma/4m6TQ$dIRMjz//e4/I7IntNueNSTKR7r+iFLJxvLv1h7t6FDA';
+
 export async function hashPassword(plainPassword: string): Promise<string> {
   return argon2.hash(plainPassword, HASH_OPTIONS);
 }
@@ -63,6 +72,11 @@ export async function verifyPassword(
     logger.error(
       `Hash almacenado inválido: no se pudo verificar (${(error as Error).message})`,
     );
+
+    // Parsear un hash roto falla casi instantáneamente. Verificar el hash
+    // señuelo antes de devolver false iguala el costo con un email inexistente
+    // o una contraseña incorrecta y evita reabrir el oráculo temporal.
+    await argon2.verify(DUMMY_PASSWORD_HASH, plainPassword);
     return false;
   }
 }
