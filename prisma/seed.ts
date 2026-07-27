@@ -4,6 +4,7 @@ import { Logger } from '@nestjs/common';
 import prisma from '@db';
 import { buildTemplateSchema } from '@tpklabs/browchar-contracts';
 import { hashPassword } from '../src/auth/password-hasher';
+import { shouldSeedDemoData } from '../src/config/seed-policy';
 import type { Prisma } from './generated/client';
 import type { TemplateSection } from '../src/common/types/template.types';
 import { env } from '../src/config/env';
@@ -299,11 +300,18 @@ function validateBasePlaybookSeed(basePlaybook: BasePlaybook, source: string) {
 
 /**
  * Contraseña del usuario demo. Es pública a propósito: sirve para probar el
- * login en desarrollo. El seed de usuarios no corre en producción.
+ * login fuera de producción.
  */
 const DEMO_PASSWORD = 'demo-password-1234';
 
 async function seedUsers() {
+  if (!shouldSeedDemoData(env.NODE_ENV)) {
+    logger.log(
+      'NODE_ENV=production: se omite el usuario demo con credenciales públicas.',
+    );
+    return null;
+  }
+
   // Usuario demo SOLO para desarrollo. Permite probar POST /characters con
   // ownerId "usr_demo" y ahora también `POST /auth/login`.
   //
@@ -560,14 +568,16 @@ async function main() {
   const systemsCount = await seedSystems();
   const gamesCount = await seedGames();
   const playbooksCount = await seedPlaybooksForExistingGames();
-  const charactersCount = await seedCharacters(demoUser.id);
+  const charactersCount = demoUser ? await seedCharacters(demoUser.id) : 0;
 
   logger.log('Seed finalizado correctamente.');
   logger.log(`Systems creados/actualizados: ${systemsCount}`);
   logger.log(`Games creados/actualizados: ${gamesCount}`);
   logger.log(`Playbooks creados/actualizados: ${playbooksCount}`);
   logger.log(`Characters (test) creados/actualizados: ${charactersCount}`);
-  logger.log(`Usuario demo (dev): ${demoUser.id}`);
+  if (demoUser) {
+    logger.log(`Usuario demo (no producción): ${demoUser.id}`);
+  }
 }
 
 main()

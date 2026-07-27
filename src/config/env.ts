@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-type NodeEnv = 'development' | 'test' | 'production';
+export type NodeEnv = 'development' | 'test' | 'production';
 
 function getRequiredEnv(name: string): string {
   const value = process.env[name];
