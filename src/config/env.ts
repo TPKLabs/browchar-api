@@ -61,8 +61,15 @@ function parseCorsOrigins(value: string | undefined): string[] {
  */
 const JWT_SECRET_MIN_LENGTH = 32;
 
-/** Cómo obtener un secreto válido; se repite en todos los errores de abajo. */
-const JWT_SECRET_HINT = 'Generá uno con: openssl rand -base64 48';
+/**
+ * Cómo obtener un secreto válido; se repite en todos los errores de abajo.
+ *
+ * Se sugiere el comando de node y no `openssl`: node es prerequisito del
+ * proyecto, así que está garantizado en cualquier máquina donde esto corra.
+ * `openssl` viene con Git for Windows pero no está asegurado.
+ */
+const JWT_SECRET_HINT =
+  "Generá uno con: node -e \"console.log(require('crypto').randomBytes(48).toString('base64'))\"";
 
 function parseJwtSecret(): string {
   const secret = process.env.JWT_SECRET;

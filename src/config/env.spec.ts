@@ -67,8 +67,13 @@ describe('env', () => {
       );
     });
 
-    it('el error dice cómo generar uno válido', () => {
-      expect(() => loadEnv({ JWT_SECRET: 'corto' })).toThrow(/openssl rand/);
+    // El mensaje tiene que traer un comando ejecutable, no sólo "falta la
+    // variable": es lo único que ve quien copió `.env.example` y no sabe qué
+    // poner. Se afirma sobre el comando portable (node) y no sobre `openssl`,
+    // que en Windows puede no existir.
+    it('el error trae un comando ejecutable para generar uno', () => {
+      expect(() => loadEnv({ JWT_SECRET: 'corto' })).toThrow(/randomBytes/);
+      expect(() => loadEnv({ JWT_SECRET: undefined })).toThrow(/node -e/);
     });
   });
 

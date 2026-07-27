@@ -9,9 +9,11 @@ Follow these steps in order. Each step must succeed before moving to the next.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js **>=22.19** (see `.nvmrc` / `engines` in `package.json` — the
+  Testcontainers e2e suite requires it, and `npm install` warns below it)
 - npm
 - PostgreSQL running locally (default: `localhost:5432`)
+- Docker — only for `npm run test:e2e`, not for normal development
 
 ---
 
@@ -76,9 +78,22 @@ does the rest.
 
 #### How
 
+Node is already a prerequisite of this project, so this works everywhere the
+app itself runs — Git Bash, PowerShell, cmd, macOS, Linux:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
+```
+
+Or, if you have OpenSSL on your PATH:
+
 ```bash
 openssl rand -base64 48
 ```
+
+> Prefer the Node one on Windows. `openssl` ships with Git for Windows, so it
+> is often available — but it is not guaranteed, and a fresh machine without
+> Git Bash will just report "command not found".
 
 #### Where
 
@@ -99,7 +114,7 @@ or short value fails at **startup**, not on the first login. If you skip it you
 get this and the process exits:
 
 ```
-[ENV] Falta JWT_SECRET. Generá uno con: openssl rand -base64 48
+[ENV] Falta JWT_SECRET. Generá uno con: node -e "console.log(require('crypto').randomBytes(48).toString('base64'))"
 ```
 
 You set it **once per environment**, not per run:
@@ -249,13 +264,13 @@ After `npm install`, husky sets up Git hooks automatically. On every commit:
 
 ## Troubleshooting
 
-| Problem                                   | Fix                                                                                                                |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `[ENV] Falta JWT_SECRET` on startup       | You copied `.env.example`, which ships it empty on purpose. Run `openssl rand -base64 48` and paste it into `.env` |
-| `[ENV] JWT_SECRET debe tener al menos 32` | The value is too short — generate a proper one, do not pad it by hand                                              |
-| `DATABASE_URL` connection error           | Check PostgreSQL is running and credentials in `.env` match                                                        |
-| `prisma generate` fails                   | Make sure `npm install` ran successfully first                                                                     |
-| Seed fails with "System not found"        | Run migrations before seeding (`prisma migrate deploy` first)                                                      |
-| Port already in use                       | Change `PORT` in `.env` or kill the process on that port                                                           |
-| `npm publish`/consume: `401 Unauthorized` | `GITHUB_TOKEN` not set or lacks the right scope (`write:packages` to publish, `read:packages` to consume)          |
-| `npm publish`: `403`/SSO error            | If the `TPKLabs` org enforces SSO, authorize the token for the org (the "Configure SSO" button next to the token)  |
+| Problem                                   | Fix                                                                                                               |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `[ENV] Falta JWT_SECRET` on startup       | You copied `.env.example`, which ships it empty on purpose. Generate one (see step 2) and paste it into `.env`    |
+| `[ENV] JWT_SECRET debe tener al menos 32` | The value is too short — generate a proper one, do not pad it by hand                                             |
+| `DATABASE_URL` connection error           | Check PostgreSQL is running and credentials in `.env` match                                                       |
+| `prisma generate` fails                   | Make sure `npm install` ran successfully first                                                                    |
+| Seed fails with "System not found"        | Run migrations before seeding (`prisma migrate deploy` first)                                                     |
+| Port already in use                       | Change `PORT` in `.env` or kill the process on that port                                                          |
+| `npm publish`/consume: `401 Unauthorized` | `GITHUB_TOKEN` not set or lacks the right scope (`write:packages` to publish, `read:packages` to consume)         |
+| `npm publish`: `403`/SSO error            | If the `TPKLabs` org enforces SSO, authorize the token for the org (the "Configure SSO" button next to the token) |
