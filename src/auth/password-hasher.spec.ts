@@ -81,6 +81,19 @@ describe('password-hasher', () => {
     );
   });
 
+  it('propagates an operational failure from the dummy verification', async () => {
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+    const dummyFailure = new Error('argon2 unavailable');
+    jest
+      .spyOn(argon2Module, 'verify')
+      .mockRejectedValueOnce(new Error('stored hash cannot be parsed'))
+      .mockRejectedValueOnce(dummyFailure);
+
+    await expect(
+      verifyPassword('dev-only-not-a-real-hash', 'cualquier-cosa'),
+    ).rejects.toBe(dummyFailure);
+  });
+
   it('pins the OWASP-minimum parameters in the produced hash', async () => {
     const hash = await hashPassword('correct horse battery staple');
 
