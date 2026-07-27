@@ -200,6 +200,27 @@ describe('AuthService', () => {
       expect(expiresIn).toBe(exp - iat);
     });
 
+    it.each([
+      null,
+      'raw-payload',
+      {},
+      { exp: 'invalid', iat: 123 },
+      { exp: 123 },
+      { exp: 123, iat: 'invalid' },
+    ])(
+      'fails closed when the signed token decodes without numeric timestamps: %p',
+      async (decoded) => {
+        prismaMock.user.findUnique.mockResolvedValue(storedUser);
+        jest.spyOn(jwtService, 'decode').mockReturnValue(decoded);
+
+        await expect(
+          service.login({ email: input.email, password }),
+        ).rejects.toThrow(
+          'El JWT firmado no pudo decodificarse con iat/exp válidos',
+        );
+      },
+    );
+
     it('rejects a wrong password', async () => {
       prismaMock.user.findUnique.mockResolvedValue(storedUser);
 

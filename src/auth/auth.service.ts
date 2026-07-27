@@ -168,10 +168,21 @@ export class AuthService {
     // `exp` e `iat` los pone la librería al firmar; se leen del token ya
     // emitido en vez de recalcular la duración a mano, así el número que
     // devolvemos no puede divergir de la expiración real del token.
-    const { exp, iat } = this.jwtService.decode<{ exp: number; iat: number }>(
-      accessToken,
-    );
+    const decoded = this.jwtService.decode<unknown>(accessToken);
 
-    return { accessToken, expiresIn: exp - iat };
+    if (
+      typeof decoded !== 'object' ||
+      decoded === null ||
+      !('exp' in decoded) ||
+      typeof decoded.exp !== 'number' ||
+      !('iat' in decoded) ||
+      typeof decoded.iat !== 'number'
+    ) {
+      throw new Error(
+        'El JWT firmado no pudo decodificarse con iat/exp válidos',
+      );
+    }
+
+    return { accessToken, expiresIn: decoded.exp - decoded.iat };
   }
 }

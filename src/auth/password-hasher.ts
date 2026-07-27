@@ -76,6 +76,11 @@ export async function verifyPassword(
     // Parsear un hash roto falla casi instantáneamente. Verificar el hash
     // señuelo antes de devolver false iguala el costo con un email inexistente
     // o una contraseña incorrecta y evita reabrir el oráculo temporal.
+    //
+    // Si esta segunda verificación falla, la excepción se propaga a propósito:
+    // ya no es una credencial inválida sino una falla del subsistema
+    // criptográfico. Ocultarla como `false` devolvería un 401 engañoso y, si el
+    // hash señuelo se rompió, volvería a crear un camino anormalmente rápido.
     await argon2.verify(DUMMY_PASSWORD_HASH, plainPassword);
     return false;
   }
