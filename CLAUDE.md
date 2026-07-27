@@ -13,10 +13,31 @@ REST API for managing tabletop RPG character sheets. Built with NestJS, Prisma, 
 
 ## Skills available
 
+Todas viven en `.claude/skills/`:
+
 - `first-setup` — onboarding a new dev or setting up from scratch
 - `pre-commit` — understanding or modifying the pre-commit checks
 - `commit-conventions` — writing commit messages
+- `pr-conventions` — branch names, PR titles and PR body structure
 - `changelog` — understanding or modifying the automatic CHANGELOG.md updater
+- `review-standards` — reviewing a diff against this project's conventions
+
+## Instrucciones para agentes: una sola fuente
+
+`CLAUDE.md` (este archivo) y `.claude/skills/` son la **fuente única**, sin
+importar qué agente los lea. `AGENTS.md` es sólo un puntero acá, para las
+herramientas que buscan ese nombre por convención.
+
+**No crear copias por herramienta.** Existieron: un duplicado de este archivo
+en `AGENTS.md` y uno de `.claude/skills/` en `.agents/skills/`. Se
+desincronizaron — `JWT_SECRET` quedó documentado en una copia y ausente en la
+otra, así que quien leía la equivocada recibía instrucciones viejas sin forma
+de darse cuenta. `.agents/` está en `.gitignore` para que un espejo regenerado
+no vuelva a commitearse.
+
+La excepción son las **definiciones de agentes** (`.claude/agents/*.md` vs
+`.codex/agents/*.toml`): son formatos distintos por herramienta, no copias del
+mismo contenido, así que cada una mantiene la suya.
 
 ## Architecture
 
