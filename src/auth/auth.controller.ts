@@ -1,13 +1,19 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto } from './auth.schemas';
+import { Public } from './public.decorator';
 
 /**
  * Rutas del recurso Auth.
  *
  * La validación de la forma del request la aplica el pipe global de nestjs-zod
  * (registrado en AppModule) sobre los DTOs `createZodDto`.
+ *
+ * Registro y login son públicos por necesidad lógica: son los endpoints que
+ * uno usa **para obtener** un token, así que no pueden exigir uno. `/auth/me`
+ * (DEV-86) sí va protegido.
  */
+@Public()
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

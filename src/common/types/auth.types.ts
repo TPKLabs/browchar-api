@@ -31,6 +31,32 @@ export interface JwtPayload {
 }
 
 /**
+ * Actor autenticado que el guard JWT deja en `req.user` (DEV-88).
+ *
+ * Sale del token, no de la base. Es deliberadamente el mínimo que permite
+ * scopear una query: el resto del usuario se busca por `userId` cuando hace
+ * falta de verdad.
+ *
+ * `userId` y no `sub`: `sub` es el nombre del claim en el token, un detalle
+ * del transporte. De este lado del guard lo que hay es el id del dueño de la
+ * request, y ese es el nombre con el que lo van a leer los services.
+ */
+export interface AuthPrincipal {
+  userId: string;
+}
+
+declare module 'express' {
+  interface Request {
+    /**
+     * Lo pone `JwtAuthGuard`. Es opcional porque en una ruta `@Public()` no
+     * hay actor — TypeScript obliga entonces a contemplar ese caso en vez de
+     * asumir que siempre hay usuario.
+     */
+    user?: AuthPrincipal;
+  }
+}
+
+/**
  * Sesión emitida por `POST /auth/login`, PRE-serialización.
  *
  * Igual que `AuthUserView`, el `createdAt` de adentro es `Date` porque viene
